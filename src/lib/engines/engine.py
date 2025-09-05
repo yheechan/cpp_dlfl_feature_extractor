@@ -1,12 +1,15 @@
+from abc import ABC, abstractmethod
 
 
-
-class Engine:
-    def __init__(self, config: dict):
-        self.config = config
-
+class Engine(ABC):
+    def __init__(self):
+        pass
+    
+    @abstractmethod
     def run(self):
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    def log(self, message: str):
-        print(f"[EngineBase] {message}")
+        """Execute the engine's main functionality"""
+        raise NotImplementedError("Subclasses must implement run() method")
+    
+    def cleanup(self):
+        """Optional cleanup method that subclasses can override"""
+        pass

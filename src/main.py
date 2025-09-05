@@ -90,7 +90,25 @@ def main():
 
     inital_configuration(args)
 
-    engine = EngineFactory(engine_type=args.engine_type).create_engine()
+    if args.engine_type:
+        try:
+            engine: Engine = EngineFactory(engine_type=args.engine_type).create_engine()
+            logging.info(f"Successfully created engine: {args.engine_type}")
+            
+            # Run the engine
+            engine.run()
+            
+            # Clean up
+            engine.cleanup()
+            
+        except ValueError as e:
+            logging.error(f"Failed to create engine: {e}")
+            available_engines = EngineFactory.get_available_engines()
+            logging.info(f"Available engines: {', '.join(available_engines)}")
+        except Exception as e:
+            logging.error(f"Error running engine: {e}")
+    else:
+        logging.warning("No engine type specified. Use -et/--engine-type to specify an engine.")
 
 
 if __name__ == "__main__":
