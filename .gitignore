@@ -1,0 +1,16 @@
+.vscode/
+.env
+__pycache__
+out
+temp
+work
+subjects
+log
+# *NSFW*
+*.zip
+assets/opencv*
+statistics/
+statistics-v1/
+ignore/
+reference-papers/
+configs/config.json
