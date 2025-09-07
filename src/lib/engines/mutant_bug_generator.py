@@ -1,13 +1,14 @@
-
 import logging
+
 from lib.engines.engine import Engine
+from lib.experiment_configs import ExperimentConfigs
 
 LOGGER = logging.getLogger(__name__)
 
 
 class MutantBugGenerator(Engine):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config: ExperimentConfigs):
+        super().__init__(config)
         LOGGER.info("MutantBugGenerator initialized")
     
     def run(self):

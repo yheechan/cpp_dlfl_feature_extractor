@@ -15,3 +15,4 @@ ignore/
 reference-papers/
 configs/config.json
 logs/
+reference.py

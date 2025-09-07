@@ -1,5 +1,7 @@
 import logging
 from typing import Dict, Type
+
+from lib.experiment_configs import ExperimentConfigs
 from lib.engines.engine import Engine
 from lib.engines.mutant_bug_generator import MutantBugGenerator
 
@@ -17,20 +19,19 @@ class EngineFactory:
         # "code_analyzer": CodeAnalyzer,
     }
     
-    def __init__(self, engine_type: str):
-        self.engine_type = engine_type
-    
-    def create_engine(self) -> Engine:
+    @classmethod
+    def create_engine(cls, config: ExperimentConfigs) -> Engine:
         """Create and return an engine instance based on the specified type"""
-        if self.engine_type not in self._engines:
-            available_types = ", ".join(self._engines.keys())
-            error_msg = f"Unknown engine type: {self.engine_type}. Available types: {available_types}"
+
+        if config.ARGS.engine_type not in cls._engines:
+            available_types = ", ".join(cls._engines.keys())
+            error_msg = f"Unknown engine type: {config.ARGS.engine_type}. Available types: {available_types}"
             LOGGER.error(error_msg)
             raise ValueError(error_msg)
-        
-        engine_class = self._engines[self.engine_type]
-        engine_instance = engine_class()
-        LOGGER.info(f"Created engine of type: {self.engine_type}")
+
+        engine_class = cls._engines[config.ARGS.engine_type]
+        engine_instance = engine_class(config)
+        LOGGER.info(f"Created engine of type: {config.ARGS.engine_type}")
         return engine_instance
     
     @classmethod
@@ -43,4 +44,3 @@ class EngineFactory:
         """Register a new engine type (useful for plugins or extensions)"""
         cls._engines[engine_type] = engine_class
         LOGGER.info(f"Registered new engine type: {engine_type}")
-        
