@@ -11,29 +11,29 @@ from lib.workers.worker import Worker
 
 from utils.file_utils import *
 
-def configurate_directories(config: ExperimentConfigs):
+def configurate_directories(CONFIG: ExperimentConfigs):
     cwd = os.getcwd()
-    config.CWD = cwd
+    CONFIG.CWD = cwd
     root_dir = os.path.dirname(cwd)
-    config.ROOT_DIR = root_dir
+    CONFIG.ROOT_DIR = root_dir
     home_dir = os.path.dirname(root_dir)
-    config.HOME_DIR = home_dir
-    config.RESEARCH_DATA = os.environ["RESEARCH_DATA"]
+    CONFIG.HOME_DIR = home_dir
+    CONFIG.RESEARCH_DATA = os.environ["RESEARCH_DATA"]
 
     def _configurate_log_dir():
-        log_dir = os.path.join(config.ROOT_DIR, "logs", config.ARGS.experiment_label)
-        config.LOG_DIR = log_dir
+        log_dir = os.path.join(CONFIG.ROOT_DIR, "logs", CONFIG.ARGS.experiment_label)
+        CONFIG.LOG_DIR = log_dir
         make_directory(log_dir)
 
     def _configurate_data_dir():
         if "RESEARCH_DATA" not in os.environ:
             raise KeyError("RESEARCH_DATA environment variable not set.")
-        research_data_dir = os.path.join(config.RESEARCH_DATA, config.ARGS.experiment_label)
+        research_data_dir = os.path.join(CONFIG.RESEARCH_DATA, CONFIG.ARGS.experiment_label)
         make_directory(research_data_dir)
     
     def _configurate_working_dir():
-        working_dir = os.path.join(config.HOME_DIR, "cpp_research_working_dir", config.ARGS.experiment_label, config.ARGS.subject)
-        config.WORKING_DIR = working_dir
+        working_dir = os.path.join(CONFIG.HOME_DIR, "cpp_research_working_dir", CONFIG.ARGS.experiment_label, CONFIG.ARGS.subject)
+        CONFIG.WORKING_DIR = working_dir
         make_directory(working_dir)
     
     # Set default log directory
@@ -45,12 +45,12 @@ def configurate_directories(config: ExperimentConfigs):
     # Set default working directory
     _configurate_working_dir()
 
-def configurate_logger(config: ExperimentConfigs):
-    main_log_file = os.path.join(config.LOG_DIR, "main.log")
+def configurate_logger(CONFIG: ExperimentConfigs):
+    main_log_file = os.path.join(CONFIG.LOG_DIR, "main.log")
     
-    if config.ARGS.debug:
+    if CONFIG.ARGS.debug:
         log_level = logging.DEBUG
-    elif config.ARGS.verbose:
+    elif CONFIG.ARGS.verbose:
         log_level = logging.INFO
     else:
         log_level = logging.WARNING
@@ -73,29 +73,27 @@ def inital_configuration(config: ExperimentConfigs):
 
 
 def main():
-    config = ExperimentConfigs()
-    config.set_parser()
+    CONFIG = ExperimentConfigs()
+    CONFIG.set_parser()
 
-    inital_configuration(config)
+    inital_configuration(CONFIG)
 
     # Validate that only one of engine-type or worker-type is specified
-    if config.ARGS.engine_type and config.ARGS.worker_type:
+    if CONFIG.ARGS.engine_type and CONFIG.ARGS.worker_type:
         logging.error("Cannot specify both --engine-type and --worker-type. Choose one.")
         return
 
-    if not config.ARGS.engine_type and not config.ARGS.worker_type:
+    if not CONFIG.ARGS.engine_type and not CONFIG.ARGS.worker_type:
         logging.warning("No engine or worker type specified. Use -et/--engine-type or -wt/--worker-type.")
         logging.info(f"Available engines: {', '.join(EngineFactory.get_available_engines())}")
         logging.info(f"Available workers: {', '.join(WorkerFactory.get_available_workers())}")
         return
 
     # Handle engine execution
-    if config.ARGS.engine_type:
+    if CONFIG.ARGS.engine_type:
         try:
-            engine: Engine = EngineFactory.create_engine(
-                config
-            )
-            logging.info(f"Successfully created engine: {config.ARGS.engine_type}")
+            engine: Engine = EngineFactory.create_engine(CONFIG)
+            logging.info(f"Successfully created engine: {CONFIG.ARGS.engine_type}")
 
             # Run the engine
             engine.run()
@@ -111,12 +109,10 @@ def main():
             logging.error(f"Error running engine: {e}")
     
     # Handle worker execution
-    if config.ARGS.worker_type:
+    if CONFIG.ARGS.worker_type:
         try:
-            worker: Worker = WorkerFactory.create_worker(
-                config
-            )
-            logging.info(f"Successfully created worker: {config.ARGS.worker_type}")
+            worker: Worker = WorkerFactory.create_worker(CONFIG)
+            logging.info(f"Successfully created worker: {CONFIG.ARGS.worker_type}")
 
             # Execute the worker
             worker.execute()

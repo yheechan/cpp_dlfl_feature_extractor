@@ -20,17 +20,17 @@ class WorkerFactory:
     }
     
     @classmethod
-    def create_worker(cls, config: ExperimentConfigs) -> Worker:
+    def create_worker(cls, CONFIG: ExperimentConfigs) -> Worker:
         """Create and return a worker instance based on the specified type"""
-        if config.ARGS.worker_type not in cls._workers:
+        if CONFIG.ARGS.worker_type not in cls._workers:
             available_types = ", ".join(cls._workers.keys())
-            error_msg = f"Unknown worker type: {config.ARGS.worker_type}. Available types: {available_types}"
+            error_msg = f"Unknown worker type: {CONFIG.ARGS.worker_type}. Available types: {available_types}"
             LOGGER.error(error_msg)
             raise ValueError(error_msg)
 
-        worker_class = cls._workers[config.ARGS.worker_type]
-        worker_instance = worker_class(config)
-        LOGGER.info(f"Created worker of type: {config.ARGS.worker_type}")
+        worker_class = cls._workers[CONFIG.ARGS.worker_type]
+        worker_instance = worker_class(CONFIG)
+        LOGGER.info(f"Created worker of type: {CONFIG.ARGS.worker_type}")
         return worker_instance
     
     @classmethod

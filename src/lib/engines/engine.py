@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from lib.experiment_configs import ExperimentConfigs
 
 class Engine(ABC):
-    def __init__(self, config: ExperimentConfigs):
-        self.config = config
+    def __init__(self, CONFIG: ExperimentConfigs):
+        self.CONFIG = CONFIG
 
     @abstractmethod
     def run(self):

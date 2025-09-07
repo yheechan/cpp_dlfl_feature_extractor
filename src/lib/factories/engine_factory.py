@@ -20,18 +20,18 @@ class EngineFactory:
     }
     
     @classmethod
-    def create_engine(cls, config: ExperimentConfigs) -> Engine:
+    def create_engine(cls, CONFIG: ExperimentConfigs) -> Engine:
         """Create and return an engine instance based on the specified type"""
 
-        if config.ARGS.engine_type not in cls._engines:
+        if CONFIG.ARGS.engine_type not in cls._engines:
             available_types = ", ".join(cls._engines.keys())
-            error_msg = f"Unknown engine type: {config.ARGS.engine_type}. Available types: {available_types}"
+            error_msg = f"Unknown engine type: {CONFIG.ARGS.engine_type}. Available types: {available_types}"
             LOGGER.error(error_msg)
             raise ValueError(error_msg)
 
-        engine_class = cls._engines[config.ARGS.engine_type]
-        engine_instance = engine_class(config)
-        LOGGER.info(f"Created engine of type: {config.ARGS.engine_type}")
+        engine_class = cls._engines[CONFIG.ARGS.engine_type]
+        engine_instance = engine_class(CONFIG)
+        LOGGER.info(f"Created engine of type: {CONFIG.ARGS.engine_type}")
         return engine_instance
     
     @classmethod

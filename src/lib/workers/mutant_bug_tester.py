@@ -7,8 +7,8 @@ from lib.experiment_configs import ExperimentConfigs
 LOGGER = logging.getLogger(__name__)
 
 class MutantBugTester(Worker):
-    def __init__(self, config: ExperimentConfigs):
-        super().__init__(config)
+    def __init__(self, CONFIG: ExperimentConfigs):
+        super().__init__(CONFIG)
         LOGGER.info("MutantBugTester initialized")
 
     def execute(self):
