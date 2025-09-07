@@ -32,7 +32,7 @@ def configurate_directories(config: ExperimentConfigs):
         make_directory(research_data_dir)
     
     def _configurate_working_dir():
-        working_dir = os.path.join(config.HOME_DIR, "cpp_research_working_dir", config.ARGS.experiment_label)
+        working_dir = os.path.join(config.HOME_DIR, "cpp_research_working_dir", config.ARGS.experiment_label, config.ARGS.subject)
         config.WORKING_DIR = working_dir
         make_directory(working_dir)
     

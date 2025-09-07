@@ -18,8 +18,13 @@ class FileManagerFactory:
     }
     
     @classmethod
-    def create_file_manager(cls, manager_type: str) -> FileManager:
+    def create_file_manager(cls, is_remote: bool) -> FileManager:
         """Create and return a file manager instance based on the specified type"""
+        if is_remote:
+            manager_type = "remote"
+        else:
+            manager_type = "local"
+
         if manager_type not in cls._file_managers:
             available_types = ", ".join(cls._file_managers.keys())
             error_msg = f"Unknown file manager type: {manager_type}. Available types: {available_types}"
