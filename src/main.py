@@ -20,33 +20,16 @@ def configurate_directories(CONFIG: ExperimentConfigs):
     CONFIG.HOME_DIR = home_dir
     CONFIG.RESEARCH_DATA = os.environ["RESEARCH_DATA"]
 
-    def _configurate_log_dir():
-        log_dir = os.path.join(CONFIG.ROOT_DIR, "logs", CONFIG.ARGS.experiment_label)
-        CONFIG.LOG_DIR = log_dir
-        make_directory(log_dir)
-
-    def _configurate_data_dir():
-        if "RESEARCH_DATA" not in os.environ:
-            raise KeyError("RESEARCH_DATA environment variable not set.")
-        research_data_dir = os.path.join(CONFIG.RESEARCH_DATA, CONFIG.ARGS.experiment_label)
-        make_directory(research_data_dir)
-    
-    def _configurate_working_dir():
-        working_dir = os.path.join(CONFIG.HOME_DIR, "cpp_research_working_dir", CONFIG.ARGS.experiment_label, CONFIG.ARGS.subject)
-        CONFIG.WORKING_DIR = working_dir
-        make_directory(working_dir)
-    
-    # Set default log directory
-    _configurate_log_dir()
-
-    # Set default research data directory
-    _configurate_data_dir()
-
-    # Set default working directory
-    _configurate_working_dir()
-
 def configurate_logger(CONFIG: ExperimentConfigs):
-    main_log_file = os.path.join(CONFIG.LOG_DIR, "main.log")
+    log_dir = os.path.join(
+        CONFIG.ROOT_DIR, 
+        "logs",
+        CONFIG.ARGS.experiment_label,
+        CONFIG.ARGS.subject
+    )
+    make_directory(log_dir)
+
+    main_log_file = os.path.join(log_dir, "main.log")
     
     if CONFIG.ARGS.debug:
         log_level = logging.DEBUG
@@ -66,7 +49,7 @@ def configurate_logger(CONFIG: ExperimentConfigs):
         ]
     )
 
-def inital_configuration(config: ExperimentConfigs):
+def initial_configuration(config: ExperimentConfigs):
     load_dotenv(override=True)
     configurate_directories(config)
     configurate_logger(config)
@@ -76,7 +59,7 @@ def main():
     CONFIG = ExperimentConfigs()
     CONFIG.set_parser()
 
-    inital_configuration(CONFIG)
+    initial_configuration(CONFIG)
 
     # Validate that only one of engine-type or worker-type is specified
     if CONFIG.ARGS.engine_type and CONFIG.ARGS.worker_type:
