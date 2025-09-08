@@ -1,14 +1,11 @@
 import argparse
+import os
+import json
 
 class ExperimentConfigs:
     # def __init__(self, args: argparse.Namespace):
     def __init__(self):
-        self.CWD = None
-        self.ROOT_DIR = None
-        self.HOME_DIR = None
-        self.RESEARCH_DATA = None
-        self.LOG_DIR = None
-        self.WORKING_DIR = None
+        self.ENV = None
 
     # def __str__(self):
         # return (f"ExperimentConfigs(verbose={self.verbose}, debug={self.debug}, "
@@ -71,3 +68,17 @@ class ExperimentConfigs:
         )
 
         self.ARGS = self.PARSER.parse_args()
+
+    def set_machine_status(self):
+        machine_settings = os.path.join(self.ENV["ROOT_DIR"], ".machine_settings")
+        assert os.path.exists(machine_settings), f"Machine settings file does not exist: {machine_settings}"
+
+        settings = json.load(open(machine_settings, 'r'))
+        self.MACHINE_LIST = list(settings.keys())
+        self.MACHINE_CORE_LIST = []
+        for machine_name, machine_info in settings.items():
+            num_cores = machine_info["cores"]
+            home_directory = machine_info["homedirectory"]
+
+            for idx in range(num_cores):
+                self.MACHINE_CORE_LIST.append((machine_name, idx, home_directory))

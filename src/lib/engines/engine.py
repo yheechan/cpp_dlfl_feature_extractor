@@ -4,7 +4,9 @@ import logging
 
 from lib.experiment_configs import ExperimentConfigs
 from lib.subject import Subject
-from lib.factories.file_manger_factory import FileManagerFactory
+from lib.factories.file_manager_factory import FileManagerFactory
+from lib.factories.executor_factory import ExecutorFactory
+from lib.engine_context import EngineContext
 
 LOGGER = logging.getLogger(__name__)
 
@@ -15,10 +17,126 @@ class Engine(ABC):
         self.FILE_MANAGER = FileManagerFactory.create_file_manager(
             self.CONFIG.ARGS.is_remote
         )
+        self.EXECUTOR = ExecutorFactory.create_executor(
+            self.CONFIG.ARGS.is_remote
+        )
+        
+        # Initialize all paths
+        self._initialize_paths()
+        
+        # Set up all directories
+        self._set_directories()
+
+        # Initialize local directories and executables first
+        self._initialize_basic_directory_on_local()
+
+        # Create context for executors with updated paths
+        self.context = self._create_context()
+
+        # Initialize directories for machines
+        self.initialize_basic_directory_for_machines()
+    
+    def _initialize_paths(self):
+        """Initialize all directory and file paths"""
+        self.log_dir = None
+        self.out_dir = None
+        self.working_dir = None
+        self.working_env_dir = None
+        self.src_repo = None
+        self.dest_repo = None
+        self.testcases_dir = None
+        self.tools_dir = None
         self.musicup_exec = None
         self.extractor_exec = None
+        
+    
+    def _create_context(self) -> EngineContext:
+        """Create an EngineContext object with all necessary data"""
+        return EngineContext(
+            CONFIG=self.CONFIG,
+            FILE_MANAGER=self.FILE_MANAGER,
+            tools_dir=self.tools_dir,
+            log_dir=self.log_dir,
+            out_dir=self.out_dir,
+            working_dir=self.working_dir,
+            working_env_dir=self.working_env_dir,
+            dest_repo=self.dest_repo,
+            musicup_exec=self.musicup_exec,
+            extractor_exec=self.extractor_exec
+        )
 
-        self.initialize_basic_directory_on_local()
+    def _set_directories(self):
+        LOGGER.debug("Setting up subject directories")
+        # subject research directories
+        self.log_dir = os.path.join(
+            self.CONFIG.ENV["ROOT_DIR"], 
+            "logs",
+            self.CONFIG.ARGS.experiment_label,
+            self.CONFIG.ARGS.subject
+        )
+        LOGGER.debug(f"Subject log directory: {self.log_dir}")  
+        self.out_dir = os.path.join(
+            self.CONFIG.ENV["RESEARCH_DATA"],
+            self.CONFIG.ARGS.experiment_label,
+            self.CONFIG.ARGS.subject
+        )
+        LOGGER.debug(f"Subject output directory: {self.out_dir}")
+        self.working_dir = os.path.join(
+            self.CONFIG.ENV["HOME_DIR"],
+            "cpp_research_working_dir",
+            self.CONFIG.ARGS.experiment_label,
+            self.CONFIG.ARGS.subject
+        )
+        LOGGER.debug(f"Subject working directory: {self.working_dir}")
+        self.working_env_dir = os.path.join(self.working_dir, "working_env")
+        LOGGER.debug(f"Subject working environment directory: {self.working_env_dir}")
+        
+        # subject repository directories
+        self.src_repo = os.path.join(
+            self.CONFIG.ENV["RESEARCH_DATA"], "subject_repositories", self.CONFIG.ARGS.subject
+        )
+        LOGGER.debug(f"Subject source repository: {self.src_repo}")
+        self.dest_repo = os.path.join(
+            self.working_dir, self.CONFIG.ARGS.subject
+        )
+        LOGGER.debug(f"Subject destination repository: {self.dest_repo}")
+        self.testcases_dir = os.path.join(self.dest_repo, "testcases")
+        LOGGER.debug(f"Subject testcases directory: {self.testcases_dir}")
+
+    def _initialize_basic_directory_on_local(self):
+        """Set up the basic working directory structure on the local machine"""
+        LOGGER.debug("Initializing basic directory structure on local machine")
+        # Setup tools
+        self.tools_dir = os.path.join(self.working_dir, "tools")
+        self.FILE_MANAGER.make_directory(self.tools_dir)
+        LOGGER.debug(f"Tools directory created at: {self.tools_dir}")
+
+        src_musicup_exec = os.path.join(self.CONFIG.ENV["ROOT_DIR"], "tools/MUSICUP/music")
+        src_extractor_exec = os.path.join(self.CONFIG.ENV["ROOT_DIR"], "tools/extractor/extractor")
+        assert os.path.exists(src_musicup_exec), "MUSICUP executable does not exist"
+        assert os.path.exists(src_extractor_exec), "Extractor executable does not exist"
+
+        self.FILE_MANAGER.copy_file(src_musicup_exec, self.tools_dir)
+        self.FILE_MANAGER.copy_file(src_extractor_exec, self.tools_dir)
+        self.musicup_exec = os.path.join(self.tools_dir, "music")
+        self.extractor_exec = os.path.join(self.tools_dir, "extractor")
+        LOGGER.debug("Tool executables copied to tools directory")
+
+        # Setup subject repository
+        self.FILE_MANAGER.copy_directory(self.src_repo, self.dest_repo)
+        self.SUBJECT.set_files(self.dest_repo)
+        self.SUBJECT.check_required_scripts_exists()
+        self.SUBJECT.set_subject_configurations()
+        LOGGER.debug("Subject repository copied to working directory")
+
+        # Setup subject log dir
+        self.FILE_MANAGER.make_directory(self.log_dir)
+        LOGGER.debug(f"Subject log directory created at: {self.log_dir}")
+
+        # Setup subject out dir
+        self.FILE_MANAGER.make_directory(self.out_dir)
+        LOGGER.debug(f"Subject output directory created at: {self.out_dir}")
+
 
     @abstractmethod
     def run(self):
@@ -29,36 +147,7 @@ class Engine(ABC):
         """Optional cleanup method that subclasses can override"""
         pass
 
-    def initialize_basic_directory_on_local(self):
-        """Set up the basic working directory structure on the local machine"""
-        LOGGER.debug("Initializing basic directory structure on local machine")
-        # Setup tools
-        tools_dir = os.path.join(self.SUBJECT.working_dir, "tools")
-        self.FILE_MANAGER.make_directory(tools_dir)
-        LOGGER.debug(f"Tools directory created at: {tools_dir}")
-
-        src_musicup_exec = os.path.join(self.CONFIG.ROOT_DIR, "tools/MUSICUP/music")
-        src_extractor_exec = os.path.join(self.CONFIG.ROOT_DIR, "tools/extractor/extractor")
-        assert os.path.exists(src_musicup_exec), "MUSICUP executable does not exist"
-        assert os.path.exists(src_extractor_exec), "Extractor executable does not exist"
-
-        self.FILE_MANAGER.copy_file(src_musicup_exec, tools_dir)
-        self.FILE_MANAGER.copy_file(src_extractor_exec, tools_dir)
-        LOGGER.debug("Tool executables copied to tools directory")
-
-        # Setup subject repository
-        self.FILE_MANAGER.copy_directory(self.SUBJECT.src_repo, self.SUBJECT.dest_repo)
-        self.SUBJECT.check_required_scripts_exists()
-        LOGGER.debug("Subject repository copied to working directory")
-
-        # Setup subject log dir
-        self.FILE_MANAGER.make_directory(self.SUBJECT.log_dir)
-        LOGGER.debug(f"Subject log directory created at: {self.SUBJECT.log_dir}")
-
-        # Setup subject out dir
-        self.FILE_MANAGER.make_directory(self.SUBJECT.out_dir)
-        LOGGER.debug(f"Subject output directory created at: {self.SUBJECT.out_dir}")
-
-        # Set up subject working dir
-        self.FILE_MANAGER.make_directory(self.SUBJECT.working_dir)
-        LOGGER.debug(f"Subject working directory created at: {self.SUBJECT.working_dir}")
+    def initialize_basic_directory_for_machines(self):
+        """Initialize directory structure for execution environment"""
+        self.EXECUTOR.prepare_for_execution(self.context)
+        LOGGER.debug("Basic directory structure initialized for execution")

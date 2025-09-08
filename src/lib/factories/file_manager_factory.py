@@ -1,8 +1,9 @@
 import logging
 from typing import Dict, Type
 
-from lib.fileManger.file_manager import FileManager
-from lib.fileManger.local_file_manager import LocalFileManager
+from lib.fileManager.file_manager import FileManager
+from lib.fileManager.local_file_manager import LocalFileManager
+from lib.fileManager.remote_file_manager import RemoteFileManager
 
 LOGGER = logging.getLogger(__name__)
 
@@ -12,9 +13,7 @@ class FileManagerFactory:
     # Registry of available file managers
     _file_managers: Dict[str, Type[FileManager]] = {
         "local": LocalFileManager,
-        # Add more file managers here as you implement them
-        # "remote": RemoteFileManager,
-        # "cloud": CloudFileManager,
+        "remote": RemoteFileManager,
     }
     
     @classmethod

@@ -13,16 +13,20 @@ from utils.file_utils import *
 
 def configurate_directories(CONFIG: ExperimentConfigs):
     cwd = os.getcwd()
-    CONFIG.CWD = cwd
+    os.environ["CWD"] = cwd
+
     root_dir = os.path.dirname(cwd)
-    CONFIG.ROOT_DIR = root_dir
+    os.environ["ROOT_DIR"] = root_dir
+    
     home_dir = os.path.dirname(root_dir)
-    CONFIG.HOME_DIR = home_dir
-    CONFIG.RESEARCH_DATA = os.environ["RESEARCH_DATA"]
+    os.environ["HOME_DIR"] = home_dir
+    
+    CONFIG.ENV = os.environ.copy()
+    CONFIG.set_machine_status()
 
 def configurate_logger(CONFIG: ExperimentConfigs):
     log_dir = os.path.join(
-        CONFIG.ROOT_DIR, 
+        CONFIG.ENV["ROOT_DIR"], 
         "logs",
         CONFIG.ARGS.experiment_label,
         CONFIG.ARGS.subject
