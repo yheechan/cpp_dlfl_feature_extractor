@@ -3,9 +3,14 @@ import os
 import json
 
 class ExperimentConfigs:
+    stage_key = {
+        "mutant_bug_generation": "stage01",
+        "mutant_bug_tester": "stage01",
+    }
     # def __init__(self, args: argparse.Namespace):
     def __init__(self):
         self.ENV = None
+        self.STAGE = None
 
     def set_parser(self) -> argparse.ArgumentParser:
         self.PARSER = argparse.ArgumentParser(
@@ -82,6 +87,11 @@ class ExperimentConfigs:
             type=str,
             help="Specify the mutant name for worker execution"
         )
+        self.PARSER.add_argument(
+            "-nc", "--needs-configuration",
+            action="store_true",
+            help="Indicate if the worker needs configuration"
+        )
 
         self.ARGS = self.PARSER.parse_args()
 
@@ -98,3 +108,11 @@ class ExperimentConfigs:
 
             for idx in range(num_cores):
                 self.MACHINE_CORE_LIST.append((machine_name, idx, home_directory))
+
+    def set_stage(self):
+        if self.ARGS.engine_type:
+            self.STAGE = self.stage_key[self.ARGS.engine_type]
+        elif self.ARGS.worker_type:
+            self.STAGE = self.stage_key[self.ARGS.worker_type]
+        else:
+            raise ValueError("Either engine_type or worker_type must be specified to determine the stage.")

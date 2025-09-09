@@ -13,7 +13,10 @@ class RemoteExecutor(Executor):
     def prepare_for_execution(self, CONTEXT: EngineContext):
         """Set up environment on all remote machines"""
         for machine in CONTEXT.CONFIG.MACHINE_LIST:
-            CONTEXT.FILE_MANAGER.copy_specific_directory(CONTEXT.CONFIG.ENV["CWD"], CONTEXT.CONFIG.ENV["ROOR_DIR"], machine=machine)
+            CONTEXT.FILE_MANAGER.copy_specific_directory(CONTEXT.CONFIG.ENV["CWD"], CONTEXT.CONFIG.ENV["ROOT_DIR"], machine=machine)
+            CONTEXT.FILE_MANAGER.copy_specific_file(os.path.join(CONTEXT.CONFIG.ENV["ROOT_DIR"], ".env"), CONTEXT.CONFIG.ENV["ROOT_DIR"], machine=machine)
+            CONTEXT.FILE_MANAGER.copy_specific_file(os.path.join(CONTEXT.CONFIG.ENV["ROOT_DIR"], ".machine_settings"), CONTEXT.CONFIG.ENV["ROOT_DIR"], machine=machine)
+
             CONTEXT.FILE_MANAGER.make_specific_directory(CONTEXT.tools_dir, machine=machine)
             CONTEXT.FILE_MANAGER.copy_specific_file(CONTEXT.musicup_exec, CONTEXT.tools_dir, machine=machine)
             CONTEXT.FILE_MANAGER.copy_specific_file(CONTEXT.extractor_exec, CONTEXT.tools_dir, machine=machine)
@@ -30,7 +33,7 @@ class RemoteExecutor(Executor):
         # Set up subject working env for each machine core
         for machine_name, machine_idx, machine_home_directory in CONTEXT.CONFIG.MACHINE_CORE_LIST:
             machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{machine_idx}")
-            assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.ENV['STAGE']}-assigned_works")
+            assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
             CONTEXT.FILE_MANAGER.make_specific_directory(assigned_works_dir, machine=machine_name)
             LOGGER.debug(f"Assigned works directory created at: {assigned_works_dir}")
 

@@ -31,3 +31,15 @@ class Subject():
         assert os.path.exists(self.build_script), "Build script does not exist"
         assert os.path.exists(self.clean_script), "Clean build script does not exist"
         assert os.path.exists(self.configurations_json), "Configuration JSON does not exist"
+
+    def set_environmental_variables(self, core_dir: str):
+        if self.subject_configs["environment_setting"]["needed"]:
+            for key, value in self.subject_configs["environment_setting"]["variables"].items():
+                path = os.path.join(core_dir, value)
+                
+                if key not in os.environ:
+                    os.environ[key] = path
+                else:
+                    os.environ[key] = f"{path}:{os.environ[key]}"
+                LOGGER.debug(f"Environment variable {key} set to {os.environ[key]}")
+        LOGGER.debug("Subject environmental variables set")

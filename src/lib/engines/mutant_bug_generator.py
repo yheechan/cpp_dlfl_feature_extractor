@@ -173,6 +173,7 @@ class MutantBugGenerator(Engine):
                     "experiment_label TEXT",
                     "version TEXT",
                     "type TEXT",
+                    "mutant_type TEXT",
                     "target_code_file TEXT",
                     "buggy_code_file TEXT",
                     "UNIQUE (subject, experiment_label, version)", # -- Ensure uniqueness
@@ -196,13 +197,13 @@ class MutantBugGenerator(Engine):
             # Create table if not exists: tc_info
             if not self.DB.table_exists("cpp_tc_info"):
                 columns = [
-                    "bug_idx INT NOT NULL", # -- Foreign key to bug_info(bug_idx)
+                    "bug_idx INT NOT NULL", # -- Foreign key to cpp_bug_info(bug_idx)
                     
                     "tc_idx INT",
                     "tc_name TEXT",
                     "tc_result TEXT",
                     "tc_ret_code INT",
-                    "executione_time_ms DOUBLE PRECISION",
+                    "execution_time_ms DOUBLE PRECISION",
 
                     "bit_sequence_length INT",
                     "line_coverage_bit_sequence TEXT",
@@ -211,7 +212,7 @@ class MutantBugGenerator(Engine):
                     "exception_msg TEXT",
                     "stacktrace TEXT",
 
-                    "FOREIGN KEY (bug_idx) REFERENCES bug_info(bug_idx) ON DELETE CASCADE ON UPDATE CASCADE" # -- Automatically delete tc_info rows when bug_info is deleted, Update changes in bug_info to tc_info
+                    "FOREIGN KEY (bug_idx) REFERENCES cpp_bug_info(bug_idx) ON DELETE CASCADE ON UPDATE CASCADE" # -- Automatically delete tc_info rows when bug_info is deleted, Update changes in bug_info to tc_info
                 ]
                 col_str = ", ".join(columns)
                 self.DB.create_table("cpp_tc_info", col_str)

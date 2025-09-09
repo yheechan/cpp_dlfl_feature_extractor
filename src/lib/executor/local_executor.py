@@ -27,7 +27,7 @@ class LocalExecutor(Executor):
         # Set up subject working env for each machine core
         for machine_name, machine_idx, machine_home_directory in CONTEXT.CONFIG.MACHINE_CORE_LIST:
             machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{machine_idx}")
-            assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.ENV['STAGE']}-assigned_works")
+            assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
             CONTEXT.FILE_MANAGER.make_specific_directory(assigned_works_dir, machine=machine_name)
             LOGGER.debug(f"Assigned works directory created at: {assigned_works_dir}")
 
@@ -40,8 +40,9 @@ class LocalExecutor(Executor):
         def _worker(task_queue, machine_info):
             machine_name, core_idx, home_directory = machine_info
             machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
-            assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.ENV['STAGE']}-assigned_works")
-            
+            assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
+
+            needs_configuration = True
             while True:
                 try:
                     task = task_queue.get(timeout=1)
@@ -51,6 +52,7 @@ class LocalExecutor(Executor):
                     target_file, mutant = task
                     LOGGER.info(f"Worker {machine_name}::core{core_idx} processing mutant {mutant} for file {target_file}")
 
+                    # Copy mutant file to assigned works directory
                     CONTEXT.FILE_MANAGER.copy_specific_file(mutant, assigned_works_dir)
 
                     cmd = [
@@ -67,6 +69,12 @@ class LocalExecutor(Executor):
                         cmd.append("--debug")
                     if CONTEXT.CONFIG.ARGS.verbose:
                         cmd.append("--verbose")
+                    if needs_configuration:
+                        cmd.append("--needs-configuration")
+                        needs_configuration = False
+                    
+
+                    # Execute the command
                     execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
                     try:
                         LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
