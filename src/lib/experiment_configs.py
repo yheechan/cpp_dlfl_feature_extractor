@@ -7,12 +7,6 @@ class ExperimentConfigs:
     def __init__(self):
         self.ENV = None
 
-    # def __str__(self):
-        # return (f"ExperimentConfigs(verbose={self.verbose}, debug={self.debug}, "
-        #         f"experiment_label='{self.experiment_label}', is_remote={self.is_remote}, "
-        #         f"subject='{self.subject}', engine_type='{self.engine_type}', "
-        #         f"working_directory='{self.working_directory}')")
-    
     def set_parser(self) -> argparse.ArgumentParser:
         self.PARSER = argparse.ArgumentParser(
             description="C++ Deep-Learning-Based FL Feature Extractor"

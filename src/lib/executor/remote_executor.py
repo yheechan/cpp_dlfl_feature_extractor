@@ -13,7 +13,7 @@ class RemoteExecutor(Executor):
     def prepare_for_execution(self, CONTEXT: EngineContext):
         """Set up environment on all remote machines"""
         for machine in CONTEXT.CONFIG.MACHINE_LIST:
-            CONTEXT.FILE_MANAGER.copy_specific_directory(CONTEXT.CONFIG.ENV["CWD"], CONTEXT.CONFIG.ENV["HOME_DIR"], machine=machine)
+            CONTEXT.FILE_MANAGER.copy_specific_directory(CONTEXT.CONFIG.ENV["CWD"], CONTEXT.CONFIG.ENV["ROOR_DIR"], machine=machine)
             CONTEXT.FILE_MANAGER.make_specific_directory(CONTEXT.tools_dir, machine=machine)
             CONTEXT.FILE_MANAGER.copy_specific_file(CONTEXT.musicup_exec, CONTEXT.tools_dir, machine=machine)
             CONTEXT.FILE_MANAGER.copy_specific_file(CONTEXT.extractor_exec, CONTEXT.tools_dir, machine=machine)

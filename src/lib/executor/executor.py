@@ -12,6 +12,6 @@ class Executor(ABC):
         LOGGER.info(f"{self.__class__.__name__} initialized")
 
     @abstractmethod
-    def prepare_for_execution(self, context: EngineContext):
+    def prepare_for_execution(self, CONTEXT: EngineContext):
         """Prepare the execution environment"""
         raise NotImplementedError("Subclasses must implement prepare_for_execution() method")

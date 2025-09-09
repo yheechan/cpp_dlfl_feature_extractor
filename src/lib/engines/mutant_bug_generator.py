@@ -41,6 +41,9 @@ class MutantBugGenerator(Engine):
         """Execute the mutant bug generation process"""
         LOGGER.info("Running Mutant Bug Generator")
 
+        # Initialize cpp_bug_info table
+        self._initialize_required_tables()
+
         # Make required directories 'generated_mutants' and per-file directories
         target_file_info_list = self.make_required_directories()
 
@@ -54,6 +57,8 @@ class MutantBugGenerator(Engine):
 
         # Clean up build artifacts
         execute_bash_script(self.SUBJECT.clean_script, self.dest_repo)
+
+        self.start_testing_for_mutant_bugs(mutant_lists)
 
 
     def make_required_directories(self) -> list:
@@ -150,7 +155,74 @@ class MutantBugGenerator(Engine):
             LOGGER.info(f"Collected {len(target_mutants)} mutants for {target_file}")
         return mutant_list
 
+    def start_testing_for_mutant_bugs(self, mutant_lists: list):
+        self.EXECUTOR.test_for_mutant_bugs(self.CONTEXT, mutant_lists)
+
     def cleanup(self):
         """Clean up resources used by the mutant bug generator"""
         LOGGER.info("Cleaning up MutantBugGenerator resources")
         super().cleanup()
+
+    # Initialize required tables in the database
+    def _initialize_required_tables(self):
+        def _init_cpp_bug_info_table():
+            # Create table if not exists: cpp_bug_info
+            if not self.DB.table_exists("cpp_bug_info"):
+                columns = [
+                    "bug_idx SERIAL PRIMARY KEY", # -- Surrogate key
+                    "subject TEXT",
+                    "experiment_label TEXT",
+                    "version TEXT",
+                    "type TEXT",
+                    "target_code_file TEXT",
+                    "buggy_code_file TEXT",
+                    "UNIQUE (subject, experiment_label, version)", # -- Ensure uniqueness
+                    
+                    "mut_op TEXT",
+                    "pre_start_line INT",
+                    "pre_start_col INT",
+                    "pre_end_line INT",
+                    "pre_end_col INT",
+                    "pre_mut TEXT",
+                    "post_start_line INT",
+                    "post_start_col INT",
+                    "post_end_line INT",
+                    "post_end_col INT",
+                    "post_mut TEXT"
+                ]
+                col_str = ", ".join(columns)
+                self.DB.create_table("cpp_bug_info", col_str)
+
+        def _init_cpp_tc_info_table():
+            # Create table if not exists: tc_info
+            if not self.DB.table_exists("cpp_tc_info"):
+                columns = [
+                    "bug_idx INT NOT NULL", # -- Foreign key to bug_info(bug_idx)
+                    
+                    "tc_idx INT",
+                    "tc_name TEXT",
+                    "tc_result TEXT",
+                    "tc_ret_code INT",
+                    "executione_time_ms DOUBLE PRECISION",
+
+                    "bit_sequence_length INT",
+                    "line_coverage_bit_sequence TEXT",
+
+                    "exception_type TEXT",
+                    "exception_msg TEXT",
+                    "stacktrace TEXT",
+
+                    "FOREIGN KEY (bug_idx) REFERENCES bug_info(bug_idx) ON DELETE CASCADE ON UPDATE CASCADE" # -- Automatically delete tc_info rows when bug_info is deleted, Update changes in bug_info to tc_info
+                ]
+                col_str = ", ".join(columns)
+                self.DB.create_table("cpp_tc_info", col_str)
+                # Create a composite index on (subject, experiment_name, version)
+                self.DB.create_index(
+                    "tc_info",
+                    "idx_tc_info_bug_idx",
+                    "bug_idx"
+                )
+        
+        _init_cpp_bug_info_table()
+        _init_cpp_tc_info_table()
+        LOGGER.debug("Required database tables initialized")

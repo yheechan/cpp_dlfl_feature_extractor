@@ -7,6 +7,7 @@ from lib.subject import Subject
 from lib.factories.file_manager_factory import FileManagerFactory
 from lib.factories.executor_factory import ExecutorFactory
 from lib.engine_context import EngineContext
+from lib.database import CRUD
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,7 +21,8 @@ class Engine(ABC):
         self.EXECUTOR = ExecutorFactory.create_executor(
             self.CONFIG.ARGS.is_remote
         )
-        
+        self.DB = self._create_db()
+
         # Initialize all paths
         self._initialize_paths()
         
@@ -31,10 +33,10 @@ class Engine(ABC):
         self._initialize_basic_directory_on_local()
 
         # Create context for executors with updated paths
-        self.context = self._create_context()
+        self.CONTEXT = self._create_context()
 
         # Initialize directories for machines
-        self.initialize_basic_directory_for_machines()
+        self._initialize_basic_directory_for_machines()
     
     def _initialize_paths(self):
         """Initialize all directory and file paths"""
@@ -49,6 +51,15 @@ class Engine(ABC):
         self.musicup_exec = None
         self.extractor_exec = None
         
+    def _create_db(self) -> CRUD:
+        """Create a CRUD object for database interactions"""
+        return CRUD(
+            host=self.CONFIG.ENV["DB_HOST"],
+            port=self.CONFIG.ENV["DB_PORT"],
+            user=self.CONFIG.ENV["DB_USER"],
+            password=self.CONFIG.ENV["DB_PASSWORD"],
+            database=self.CONFIG.ENV["DB"]
+        )
     
     def _create_context(self) -> EngineContext:
         """Create an EngineContext object with all necessary data"""
@@ -137,6 +148,10 @@ class Engine(ABC):
         self.FILE_MANAGER.make_directory(self.out_dir)
         LOGGER.debug(f"Subject output directory created at: {self.out_dir}")
 
+    def _initialize_basic_directory_for_machines(self):
+        """Initialize directory structure for execution environment"""
+        self.EXECUTOR.prepare_for_execution(self.CONTEXT)
+        LOGGER.debug("Basic directory structure initialized for execution")
 
     @abstractmethod
     def run(self):
@@ -146,8 +161,3 @@ class Engine(ABC):
     def cleanup(self):
         """Optional cleanup method that subclasses can override"""
         pass
-
-    def initialize_basic_directory_for_machines(self):
-        """Initialize directory structure for execution environment"""
-        self.EXECUTOR.prepare_for_execution(self.context)
-        LOGGER.debug("Basic directory structure initialized for execution")
