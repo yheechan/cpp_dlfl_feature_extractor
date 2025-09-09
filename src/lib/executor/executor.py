@@ -15,3 +15,8 @@ class Executor(ABC):
     def prepare_for_execution(self, CONTEXT: EngineContext):
         """Prepare the execution environment"""
         raise NotImplementedError("Subclasses must implement prepare_for_execution() method")
+
+    @abstractmethod
+    def test_for_mutant_bugs(self, CONTEXT: EngineContext, mutant_list: list):
+        """Test for mutant bugs"""
+        raise NotImplementedError("Subclasses must implement test_for_mutant_bugs() method")

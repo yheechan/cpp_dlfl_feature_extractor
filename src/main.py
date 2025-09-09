@@ -25,16 +25,27 @@ def configurate_directories(CONFIG: ExperimentConfigs):
     CONFIG.set_machine_status()
 
 def configurate_logger(CONFIG: ExperimentConfigs):
-    log_dir = os.path.join(
-        CONFIG.ENV["ROOT_DIR"], 
-        "logs",
-        CONFIG.ARGS.experiment_label,
-        CONFIG.ARGS.subject
-    )
-    make_directory(log_dir)
+    if CONFIG.ARGS.engine_type:
+        log_dir = os.path.join(
+            CONFIG.ENV["ROOT_DIR"], 
+            "logs",
+            CONFIG.ARGS.experiment_label,
+            CONFIG.ARGS.subject
+        )
+        make_directory(log_dir)
+        main_log_file = os.path.join(log_dir, "main.log")
+    else:
+        log_dir = os.path.join(
+            CONFIG.ENV["ROOT_DIR"], 
+            "logs",
+            CONFIG.ARGS.experiment_label,
+            CONFIG.ARGS.subject,
+            "workers",
+            CONFIG.ARGS.worker_type,
+        )
+        make_directory(log_dir)
+        main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.machine}_core{CONFIG.ARGS.core_idx}_{CONFIG.ARGS.mutant}.log")
 
-    main_log_file = os.path.join(log_dir, "main.log")
-    
     if CONFIG.ARGS.debug:
         log_level = logging.DEBUG
     elif CONFIG.ARGS.verbose:
@@ -53,10 +64,10 @@ def configurate_logger(CONFIG: ExperimentConfigs):
         ]
     )
 
-def initial_configuration(config: ExperimentConfigs):
+def initial_configuration(CONFIG: ExperimentConfigs):
     load_dotenv(override=True)
-    configurate_directories(config)
-    configurate_logger(config)
+    configurate_directories(CONFIG)
+    configurate_logger(CONFIG)
 
 
 def main():

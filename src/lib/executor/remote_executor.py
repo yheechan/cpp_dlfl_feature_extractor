@@ -38,3 +38,6 @@ class RemoteExecutor(Executor):
             dest_repo_in_core = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject)
             CONTEXT.FILE_MANAGER.copy_specific_directory(CONTEXT.dest_repo, dest_repo_in_core, machine=machine_name)
             LOGGER.debug(f"Subject repository copied to: {dest_repo_in_core}")
+
+    def test_for_mutant_bugs(self, CONTEXT: EngineContext, mutant_list: list):
+        pass

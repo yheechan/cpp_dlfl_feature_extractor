@@ -61,6 +61,28 @@ class ExperimentConfigs:
             help="Specify the worker type to execute"
         )
 
+        # required information for workers
+        self.PARSER.add_argument(
+            "-m", "--machine",
+            type=str,
+            help="Specify the machine name for worker execution"
+        )
+        self.PARSER.add_argument(
+            "-ci", "--core-idx",
+            type=int,
+            help="Specify the core index for worker execution"
+        )
+        self.PARSER.add_argument(
+            "-tf", "--target-file",
+            type=str,
+            help="Specify the target file for worker execution"
+        )
+        self.PARSER.add_argument(
+            "-mu", "--mutant",
+            type=str,
+            help="Specify the mutant name for worker execution"
+        )
+
         self.ARGS = self.PARSER.parse_args()
 
     def set_machine_status(self):

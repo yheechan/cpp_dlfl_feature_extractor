@@ -53,12 +53,12 @@ class MutantBugGenerator(Engine):
 
         # Generate mutants for each target file
         self.generate_mutants_for_target_files(target_file_info_list)
-        mutant_lists = self.get_generated_mutants(target_file_info_list)
+        mutant_list = self.get_generated_mutants(target_file_info_list)
 
         # Clean up build artifacts
         execute_bash_script(self.SUBJECT.clean_script, self.dest_repo)
 
-        self.start_testing_for_mutant_bugs(mutant_lists)
+        self.start_testing_for_mutant_bugs(mutant_list)
 
 
     def make_required_directories(self) -> list:
@@ -75,7 +75,7 @@ class MutantBugGenerator(Engine):
             target_file_mutant_dir_name = target_file.replace("/", "#")
             target_file_mutant_dir_path = os.path.join(self.generated_mutants_dir, target_file_mutant_dir_name)
             self.FILE_MANAGER.make_directory(target_file_mutant_dir_path)
-            target_file_info_list.append((target_file_path, target_file_mutant_dir_path))
+            target_file_info_list.append((target_file, target_file_path, target_file_mutant_dir_path))
 
         return target_file_info_list
     
@@ -127,7 +127,7 @@ class MutantBugGenerator(Engine):
             LOGGER.info(f"Mutants generated for {target_file_path} in {target_file_mutant_dir_path}")
 
         task_queue = queue.Queue()
-        for target_file_path, target_file_mutant_dir_path in target_file_info_list:
+        for target_file, target_file_path, target_file_mutant_dir_path in target_file_info_list:
             task_queue.put((target_file_path, target_file_mutant_dir_path))
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
@@ -146,17 +146,16 @@ class MutantBugGenerator(Engine):
         
         extension = "*.c" if self.CONFIG.ENV["LANGUAGE"] == "c" else "*.cpp"
 
-        for target_file_path, target_file_mutant_dir_path in target_file_info_list:
+        for target_file, target_file_path, target_file_mutant_dir_path in target_file_info_list:
             LOGGER.debug(f"Collecting mutants from {target_file_mutant_dir_path}")
-            target_file = target_file_mutant_dir_path.replace("#", "/")          
             target_mutants = list(Path(target_file_mutant_dir_path).glob(extension))
             for mutant in target_mutants:
-                mutant_list.append((target_file, mutant))
+                mutant_list.append((target_file, mutant, target_file_mutant_dir_path))
             LOGGER.info(f"Collected {len(target_mutants)} mutants for {target_file}")
         return mutant_list
 
-    def start_testing_for_mutant_bugs(self, mutant_lists: list):
-        self.EXECUTOR.test_for_mutant_bugs(self.CONTEXT, mutant_lists)
+    def start_testing_for_mutant_bugs(self, mutant_list: list):
+        self.EXECUTOR.test_for_mutant_bugs(self.CONTEXT, mutant_list)
 
     def cleanup(self):
         """Clean up resources used by the mutant bug generator"""

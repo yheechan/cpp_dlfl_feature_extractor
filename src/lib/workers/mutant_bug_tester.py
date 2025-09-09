@@ -15,10 +15,6 @@ class MutantBugTester(Worker):
         """Execute the mutant bug testing process"""
         LOGGER.info("Executing Mutant Bug Tester")
 
-        # Simulate the mutant bug testing process
-        for i in range(5):
-            LOGGER.info(f"Testing mutant bug {i}")
-
     def stop(self):
         """Stop the mutant bug testing process"""
         LOGGER.info("Stopping Mutant Bug Tester")
