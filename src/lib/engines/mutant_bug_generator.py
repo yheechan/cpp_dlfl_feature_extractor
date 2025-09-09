@@ -2,8 +2,8 @@ import logging
 import os
 import concurrent.futures
 import queue
-import threading
 from pathlib import Path
+import csv
 
 from lib.engines.engine import Engine
 from lib.experiment_configs import ExperimentConfigs
@@ -59,6 +59,9 @@ class MutantBugGenerator(Engine):
         execute_bash_script(self.SUBJECT.clean_script, self.dest_repo)
 
         self.start_testing_for_mutant_bugs(mutant_list)
+
+        # Write mutation information to the database
+        self.write_mutation_info_to_db(mutant_list)
 
 
     def make_required_directories(self) -> list:
@@ -226,3 +229,105 @@ class MutantBugGenerator(Engine):
         _init_cpp_bug_info_table()
         _init_cpp_tc_info_table()
         LOGGER.debug("Required database tables initialized")
+
+    def write_mutation_info_to_db(self, mutant_list: list):
+        mutation_info_record = self.get_mutation_info_record()
+
+        for target_file, mutant, target_file_mutant_dir_path in mutant_list:
+            assert target_file in mutation_info_record, f"No mutation info found for target file: {target_file}"
+            assert mutant.name in mutation_info_record[target_file], f"No mutation info found for mutant: {mutant.name}"
+
+            mutant_data = mutation_info_record[target_file][mutant.name]
+            values = {
+                "mut_op": mutant_data["mut_op"],
+                "pre_start_line": mutant_data["pre_start_line"],
+                "pre_start_col": mutant_data["pre_start_col"],
+                "pre_end_line": mutant_data["pre_end_line"],
+                "pre_end_col": mutant_data["pre_end_col"],
+                "pre_mut": mutant_data["pre_mut"],
+                "post_start_line": mutant_data["post_start_line"],
+                "post_start_col": mutant_data["post_start_col"],
+                "post_end_line": mutant_data["post_end_line"],
+                "post_end_col": mutant_data["post_end_col"],
+                "post_mut": mutant_data["post_mut"]
+            }
+
+            bug_info = self.DB.read(
+                "cpp_bug_info",
+                columns="bug_idx, version, target_code_file",
+                conditions={
+                    "subject": self.CONFIG.ARGS.subject,
+                    "experiment_label": self.CONFIG.ARGS.experiment_label,
+                    "version": mutant.name,
+                    "target_code_file": target_file
+                }
+            )
+            bug_idx = bug_info[0][0] if len(bug_info) > 0 else None
+            assert bug_idx is not None, f"No bug info found in DB for mutant {mutant.name}"
+
+            conditions = {
+                "subject": self.CONFIG.ARGS.subject,
+                "experiment_label": self.CONFIG.ARGS.experiment_label,
+                "bug_idx": bug_idx,
+                "version": mutant.name,
+                "target_code_file": target_file,
+            }
+
+            self.DB.update(
+                "cpp_bug_info",
+                set_values=values,
+                conditions=conditions
+            )
+            LOGGER.debug(f"Updated mutation info in DB for mutant {mutant.name}")
+
+    def get_mutation_info_record(self):
+        mutation_info_record = {}
+        
+        for target_file in self.SUBJECT.subject_configs["target_files"]:
+            target_file_mutant_dir_name = target_file.replace("/", "#")
+            target_file_mutant_dir_path = os.path.join(self.generated_mutants_dir, target_file_mutant_dir_name)
+            target_file_source_filename= ".".join(target_file.split("/")[-1].split(".")[:-1])
+            mut_db_file = os.path.join(target_file_mutant_dir_path, f"{target_file_source_filename}_mut_db.csv")
+            
+            if not os.path.exists(mut_db_file):
+                LOGGER.error(f"Mutation database file not found: {mut_db_file}")
+                raise FileNotFoundError(f"Mutation database file not found: {mut_db_file}")
+
+            if target_file not in mutation_info_record:
+                mutation_info_record[target_file] = {}
+            
+            with open(mut_db_file, "r") as fp:
+                # read with csv
+                csv_reader = csv.reader(fp, escapechar='\\', quotechar='"', delimiter=',')
+                next(csv_reader)
+                next(csv_reader)
+                for row in csv_reader:
+                    mut_name = row[0]
+                    op = row[1]
+                    pre_start_line = row[2]
+                    pre_start_col = row[3]
+                    pre_end_line = row[4]
+                    pre_end_col = row[5]
+                    pre_mut = row[6]
+                    post_start_line = row[7]
+                    post_start_col = row[8]
+                    post_end_line = row[9]
+                    post_end_col = row[10]
+                    post_mut = row[11]
+
+                    mutation_info_record[target_file][mut_name] = {
+                        "mut_op": op,
+                        "pre_start_line": pre_start_line,
+                        "pre_start_col": pre_start_col,
+                        "pre_end_line": pre_end_line,
+                        "pre_end_col": pre_end_col,
+                        "pre_mut": pre_mut,
+                        "post_start_line": post_start_line,
+                        "post_start_col": post_start_col,
+                        "post_end_line": post_end_line,
+                        "post_end_col": post_end_col,
+                        "post_mut": post_mut
+                    }
+        return mutation_info_record
+
+
