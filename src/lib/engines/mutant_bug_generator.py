@@ -221,8 +221,8 @@ class MutantBugGenerator(Engine):
                 self.DB.create_table("cpp_tc_info", col_str)
                 # Create a composite index on (subject, experiment_name, version)
                 self.DB.create_index(
-                    "tc_info",
-                    "idx_tc_info_bug_idx",
+                    "cpp_tc_info",
+                    "idx_cpp_tc_info_bug_idx",
                     "bug_idx"
                 )
         
