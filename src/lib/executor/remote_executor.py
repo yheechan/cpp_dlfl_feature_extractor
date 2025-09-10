@@ -43,4 +43,14 @@ class RemoteExecutor(Executor):
             LOGGER.debug(f"Subject repository copied to: {dest_repo_in_core}")
 
     def test_for_mutant_bugs(self, CONTEXT: EngineContext, mutant_list: list):
-        pass
+        """Test for mutant bugs on remote machines"""
+        raise NotImplementedError("RemoteExecutor does not implement test_for_mutant_bugs() method")
+    
+    def test_for_usable_bugs(self, CONTEXT: EngineContext, mutant_list: list):
+        """Test for usable bugs on remote machines"""
+        raise NotImplementedError("RemoteExecutor does not implement test_for_usable_bugs() method")
+    
+    def test_for_prerequisite_data(self, CONTEXT: EngineContext, mutant_list: list):
+        """Test for prerequisite data on remote machines"""
+        raise NotImplementedError("RemoteExecutor does not implement test_for_prerequisite_data() method")
+

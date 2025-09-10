@@ -20,3 +20,13 @@ class Executor(ABC):
     def test_for_mutant_bugs(self, CONTEXT: EngineContext, mutant_list: list):
         """Test for mutant bugs"""
         raise NotImplementedError("Subclasses must implement test_for_mutant_bugs() method")
+
+    @abstractmethod
+    def test_for_usable_bugs(self, CONTEXT: EngineContext, mutant_list: list):
+        """Test for usable bugs"""
+        raise NotImplementedError("Subclasses must implement test_for_usable_bugs() method")
+    
+    @abstractmethod
+    def test_for_prerequisite_data(self, CONTEXT: EngineContext, mutant_list: list):
+        """Test for prerequisite data"""
+        raise NotImplementedError("Subclasses must implement test_for_prerequisite_data() method")

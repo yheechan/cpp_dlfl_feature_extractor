@@ -23,3 +23,8 @@ time python3 main.py --experiment-label attempt_1 --subject zlib_ng --engine-typ
 ```
 time python3 main.py --experiment-label attempt_1 --subject zlib_ng --engine-type usable_bug_selector -d
 ```
+
+### Stage03: Prerequisite Data Extractor
+```
+time python3 main.py --experiment-label attempt_1 --subject zlib_ng --engine-type prerequisite_data_extractor -d
+```

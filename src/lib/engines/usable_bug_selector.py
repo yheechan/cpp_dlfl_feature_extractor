@@ -19,23 +19,13 @@ class UsableBugSelector(Engine):
         """Run the usable bug selection process"""
         LOGGER.info("Running Usable Bug Selector")
 
-        # Initialize cpp_bug_info table
-        self._initialize_required_tables()
-
         # Select bugs to check for usability
         self._check_and_mark_usable_bugs()
 
         # Get target mutants to check for usability
-        mutants_list = self.get_target_mutants("AND initial IS TRUE AND usable IS NULL")
+        mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS NULL")
 
-        self._start_testing_for_usable_bugs(mutants_list)
-
-    def _initialize_required_tables(self):
-        """Initialize required tables in the database"""
-        if not self.DB.column_exists("cpp_bug_info", "initial"):
-            self.DB.add_column("cpp_bug_info", "initial BOOLEAN DEFAULT NULL")
-        if not self.DB.column_exists("cpp_bug_info", "usable"):
-            self.DB.add_column("cpp_bug_info", "usable BOOLEAN DEFAULT NULL")
+        self._start_testing_for_usable_bugs(mutant_list)
     
     def _check_and_mark_usable_bugs(self):
         bug_idx_list = self.DB.read(
