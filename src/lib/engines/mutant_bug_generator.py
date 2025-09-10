@@ -45,26 +45,26 @@ class MutantBugGenerator(Engine):
         self._initialize_required_tables()
 
         # Make required directories 'generated_mutants' and per-file directories
-        target_file_info_list = self.make_required_directories()
+        target_file_info_list = self._make_required_directories()
 
         # Configure with no coverage option & build
         execute_bash_script(self.SUBJECT.configure_no_cov_script, self.dest_repo)
         execute_bash_script(self.SUBJECT.build_script, self.dest_repo)
 
         # Generate mutants for each target file
-        self.generate_mutants_for_target_files(target_file_info_list)
-        mutant_list = self.get_generated_mutants(target_file_info_list)
+        self._generate_mutants_for_target_files(target_file_info_list)
+        mutant_list = self._get_generated_mutants(target_file_info_list)
 
         # Clean up build artifacts
         execute_bash_script(self.SUBJECT.clean_script, self.dest_repo)
 
-        self.start_testing_for_mutant_bugs(mutant_list)
+        self._start_testing_for_mutant_bugs(mutant_list)
 
         # Write mutation information to the database
-        self.write_mutation_info_to_db(mutant_list)
+        self._write_mutation_info_to_db(mutant_list)
 
 
-    def make_required_directories(self) -> list:
+    def _make_required_directories(self) -> list:
         # Make directory to save generated mutants
         self.generated_mutants_dir = os.path.join(self.out_dir, "generated_mutants")
         self.FILE_MANAGER.make_directory(self.generated_mutants_dir)
@@ -81,8 +81,8 @@ class MutantBugGenerator(Engine):
             target_file_info_list.append((target_file, target_file_path, target_file_mutant_dir_path))
 
         return target_file_info_list
-    
-    def generate_mutants_for_target_files(self, target_file_info_list: list):
+
+    def _generate_mutants_for_target_files(self, target_file_info_list: list):
         def _check_if_mutant_generation_needed(target_file_mutant_dir_path: str) -> bool:
             # Check if the mutant directory is empty
             return not os.listdir(target_file_mutant_dir_path)
@@ -144,7 +144,7 @@ class MutantBugGenerator(Engine):
                 except Exception as e:
                     LOGGER.error(f"Worker encountered an error: {e}")
     
-    def get_generated_mutants(self, target_file_info_list: list) -> dict:
+    def _get_generated_mutants(self, target_file_info_list: list) -> dict:
         mutant_list = []
         
         extension = "*.c" if self.CONFIG.ENV["LANGUAGE"] == "c" else "*.cpp"
@@ -157,7 +157,7 @@ class MutantBugGenerator(Engine):
             LOGGER.info(f"Collected {len(target_mutants)} mutants for {target_file}")
         return mutant_list
 
-    def start_testing_for_mutant_bugs(self, mutant_list: list):
+    def _start_testing_for_mutant_bugs(self, mutant_list: list):
         self.EXECUTOR.test_for_mutant_bugs(self.CONTEXT, mutant_list)
 
     def cleanup(self):
@@ -255,7 +255,7 @@ class MutantBugGenerator(Engine):
         _init_cpp_tc_info_table()
         LOGGER.debug("Required database tables initialized")
 
-    def write_mutation_info_to_db(self, mutant_list: list):
+    def _write_mutation_info_to_db(self, mutant_list: list):
         mutation_info_record = self.get_mutation_info_record()
 
         for target_file, mutant, target_file_mutant_dir_path in mutant_list:
@@ -354,5 +354,3 @@ class MutantBugGenerator(Engine):
                         "post_mut": post_mut
                     }
         return mutation_info_record
-
-

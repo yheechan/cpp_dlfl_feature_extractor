@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 import logging
+from pathlib import Path
 
 from lib.experiment_configs import ExperimentConfigs
 from lib.subject import Subject
@@ -161,3 +162,26 @@ class Engine(ABC):
     def cleanup(self):
         """Optional cleanup method that subclasses can override"""
         pass
+
+    def get_target_mutants(self, special: str = None) -> list:
+        """Get the list of target mutants to process"""
+        self.generated_mutants_dir = os.path.join(self.out_dir, "generated_mutants")
+        res = self.DB.read(
+            "cpp_bug_info",
+            columns="version, type, target_code_file, buggy_code_file",
+            conditions={
+                "subject": self.CONFIG.ARGS.subject,
+                "experiment_label": self.CONFIG.ARGS.experiment_label,
+            },
+            special=special
+        )
+        
+        mutant_list = []
+        for version, mutant_type, target_code_file, buggy_code_file in res:
+            target_file_mutant_dir_name = target_code_file.replace("/", "#")
+            target_file_mutant_dir_path = os.path.join(self.generated_mutants_dir, target_file_mutant_dir_name)
+            mutant = Path(os.path.join(target_file_mutant_dir_path, buggy_code_file))
+            mutant_list.append((target_code_file, mutant, target_file_mutant_dir_path))
+        
+        LOGGER.info(f"Total mutants to test: {len(mutant_list)}")
+        return mutant_list
