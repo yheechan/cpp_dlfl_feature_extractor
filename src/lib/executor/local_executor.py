@@ -98,7 +98,7 @@ class LocalExecutor(Executor):
                 except Exception as e:
                     LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an unexpected error: {e}")
             
-            clean_script = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject, CONTEXT.SUBJECT.clean_script)
+            clean_script = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject, "clean_script.sh")
             execute_bash_script(clean_script, os.path.join(machine_core_dir, "clean_script.sh"))
             LOGGER.info(f"Worker {machine_name}::core{core_idx} exiting")
 
