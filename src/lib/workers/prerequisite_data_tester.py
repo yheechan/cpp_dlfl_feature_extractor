@@ -35,10 +35,10 @@ class PrerequisiteDataTester(Worker):
         LOGGER.info("Testing mutants for prerequisite data")
         self._test_mutant()
     
-        # # 4. remove coverage directory
-        # if os.path.exists(self.version_coverage_dir):
-        #     shutil.rmtree(self.version_coverage_dir)
-        #     LOGGER.debug(f"Removed version coverage directory: {self.version_coverage_dir}")
+        # 4. remove coverage directory
+        if os.path.exists(self.version_coverage_dir):
+            shutil.rmtree(self.version_coverage_dir)
+            LOGGER.debug(f"Removed version coverage directory: {self.version_coverage_dir}")
     
     def _test_mutant(self):
         LOGGER.debug(f"target_file: {self.CONFIG.ARGS.target_file}, mutant: {self.CONFIG.ARGS.mutant}")
@@ -51,23 +51,23 @@ class PrerequisiteDataTester(Worker):
         MUTANT.set_filtered_files_for_gcovr(self.CONTEXT)
         MUTANT.set_target_preprocessed_files(self.CONTEXT)
 
-        # # 2. Extract line2function mapping
-        # res = MUTANT.extract_line2function_mapping(self.CONTEXT)
-        # if not res:
-        #     LOGGER.error(f"Failed to extract line2function mapping for mutant {MUTANT.mutant_file}, skipping mutant")
-        #     return
+        # 2. Extract line2function mapping
+        res = MUTANT.extract_line2function_mapping(self.CONTEXT)
+        if not res:
+            LOGGER.error(f"Failed to extract line2function mapping for mutant {MUTANT.mutant_file}, skipping mutant")
+            return
 
         # 3. Set line2function info
         MUTANT.set_line2function_info(self.CONTEXT)
 
-        # # 4. Measure coverage for candidate test cases
-        # res = MUTANT.measure_coverage_for_candidate_test_cases(self.CONTEXT)
-        # if not res:
-        #     LOGGER.error(f"Failed to measure coverage for mutant {MUTANT.mutant_file}, skipping mutant")
-        #     return
+        # 4. Measure coverage for candidate test cases
+        res = MUTANT.measure_coverage_for_candidate_test_cases(self.CONTEXT)
+        if not res:
+            LOGGER.error(f"Failed to measure coverage for mutant {MUTANT.mutant_file}, skipping mutant")
+            return
         
         # 5. Update identified cctcs in DB
-        # MUTANT.update_cctcs_in_db(self.DB)
+        MUTANT.update_cctcs_in_db(self.DB)
         MUTANT.set_tc_info_from_db(self.DB)  # refresh tc_info with using_tcs info
         if len(MUTANT.tc_info["pass"]) == 0:
             LOGGER.warning(f"Can't use this bug due to no usable passing test case for mutant {MUTANT.mutant_file}")
@@ -80,3 +80,8 @@ class PrerequisiteDataTester(Worker):
         
         # 6. postprocess coverage info
         MUTANT.postprocess_coverage_info(self.CONTEXT, self.DB)
+
+    def stop(self):
+        """Stop the Prerequisite Data Testing process"""
+        LOGGER.info("Stopping Prerequisite Data Tester")
+        super().stop()

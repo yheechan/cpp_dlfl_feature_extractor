@@ -20,7 +20,7 @@ class UsableBugSelector(Engine):
         LOGGER.info("Running Usable Bug Selector")
 
         # Select bugs to check for usability
-        # self._check_and_mark_usable_bugs()
+        self._check_and_mark_usable_bugs()
 
         # Get target mutants to check for usability
         mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS NULL")
