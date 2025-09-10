@@ -23,6 +23,7 @@ def configurate_directories(CONFIG: ExperimentConfigs):
     
     CONFIG.ENV = os.environ.copy()
     CONFIG.set_machine_status()
+    CONFIG.set_stage()
 
 def configurate_logger(CONFIG: ExperimentConfigs):
     if CONFIG.ARGS.engine_type:
@@ -33,7 +34,7 @@ def configurate_logger(CONFIG: ExperimentConfigs):
             CONFIG.ARGS.subject
         )
         make_directory(log_dir)
-        main_log_file = os.path.join(log_dir, "main.log")
+        main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.engine_type}-main.log")
     else:
         log_dir = os.path.join(
             CONFIG.ENV["ROOT_DIR"], 

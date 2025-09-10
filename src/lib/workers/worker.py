@@ -107,6 +107,17 @@ class Worker(ABC):
             os.makedirs(self.patch_dir)
         LOGGER.debug(f"Patch directory: {self.patch_dir}")
 
+        # coverage directory
+        self.coverage_dir = os.path.join(self.core_dir, "coverage")
+        LOGGER.debug(f"Coverage directory: {self.coverage_dir}")
+
+    def update_status_column_in_db(self, bug_idx: int, col_key: str):
+        self.DB.update(
+            "cpp_bug_info",
+            set_values={col_key: True},
+            conditions={"bug_idx": bug_idx}
+        )
+        LOGGER.debug(f"Updated bug_idx {bug_idx} to status {col_key} in DB")
 
     @abstractmethod
     def execute(self):
@@ -116,3 +127,4 @@ class Worker(ABC):
     def stop(self):
         """Optional stop method that subclasses can override"""
         pass
+

@@ -2,8 +2,10 @@ import logging
 from typing import Dict, Type
 
 from lib.experiment_configs import ExperimentConfigs
+
 from lib.engines.engine import Engine
 from lib.engines.mutant_bug_generator import MutantBugGenerator
+from lib.engines.usable_bug_selector import UsableBugSelector
 
 LOGGER = logging.getLogger(__name__)
 
@@ -14,6 +16,7 @@ class EngineFactory:
     # Registry of available engines
     _engines: Dict[str, Type[Engine]] = {
         "mutant_bug_generator": MutantBugGenerator,
+        "usable_bug_selector": UsableBugSelector,
         # Add more engines here as you implement them
         # "feature_extractor": FeatureExtractor,
         # "code_analyzer": CodeAnalyzer,

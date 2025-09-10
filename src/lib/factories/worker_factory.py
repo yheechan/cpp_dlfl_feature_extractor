@@ -1,9 +1,10 @@
 import logging
 from typing import Dict, Type
 
+from lib.experiment_configs import ExperimentConfigs
 from lib.workers.worker import Worker
 from lib.workers.mutant_bug_tester import MutantBugTester
-from lib.experiment_configs import ExperimentConfigs
+from lib.workers.usable_bug_tester import UsableBugTester
 
 LOGGER = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ class WorkerFactory:
     # Registry of available workers
     _workers: Dict[str, Type[Worker]] = {
         "mutant_bug_tester": MutantBugTester,
+        "usable_bug_tester": UsableBugTester,
         # Add more workers here as you implement them
         # "code_reviewer": CodeReviewer,
         # "test_runner": TestRunner,

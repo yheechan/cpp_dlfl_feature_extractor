@@ -49,10 +49,6 @@ class MutantBugTester(Worker):
         LOGGER.info("Testing mutants")
         self.test_mutant()
 
-        # 4. Clean up subject build
-        LOGGER.info("Cleaning up subject build")
-        execute_bash_script(self.SUBJECT.clean_script, self.subject_repo)
-
     def test_mutant(self):
         # Set MUTANT
         target_file = self.CONFIG.ARGS.target_file
@@ -75,7 +71,7 @@ class MutantBugTester(Worker):
             self.CONFIG.ARGS.experiment_label,
             target_file, target_file_path, 
             mutant_file, mutant_file_path,
-            patch_file
+            patch_file, self.subject_repo
         )
 
         res = MUTANT.make_path_file()

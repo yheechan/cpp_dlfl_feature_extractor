@@ -4,8 +4,10 @@ import json
 
 class ExperimentConfigs:
     stage_key = {
-        "mutant_bug_generation": "stage01",
+        "mutant_bug_generator": "stage01",
         "mutant_bug_tester": "stage01",
+        "usable_bug_selector": "stage02",
+        "usable_bug_tester": "stage02",
     }
     # def __init__(self, args: argparse.Namespace):
     def __init__(self):
