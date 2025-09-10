@@ -16,3 +16,4 @@ reference-papers/
 configs/config.json
 logs/
 reference.py
+run.sh

@@ -180,7 +180,32 @@ class MutantBugGenerator(Engine):
                     "target_code_file TEXT",
                     "buggy_code_file TEXT",
                     "UNIQUE (subject, experiment_label, version)", # -- Ensure uniqueness
-                    
+
+                    "initial BOOLEAN DEFAULT NULL",
+                    "usable BOOLEAN DEFAULT NULL",
+                    "prerequisites BOOLEAN DEFAULT NULL",
+                    "sbfl BOOLEAN DEFAULT NULL",
+                    "mlfl BOOLEAN DEFAULT NULL",
+                    "selected_for_mbfl BOOLEAN DEFAULT NULL",
+                    "mbfl_cpu_time FLOAT",
+
+                    "buggy_file TEXT DEFAULT NULL",
+                    "buggy_function TEXT DEFAULT NULL",
+                    "buggy_lineno INT DEFAULT NULL",
+                    "buggy_line_idx INT DEFAULT NULL",
+
+                    "num_failing_tcs INT",
+                    "num_passing_tcs INT",
+                    "num_ccts INT",
+                    "num_total_tcs INT",
+                    "num_lines_executed_by_failing_tcs INT",
+                    "num_lines_executed_by_passing_tcs INT",
+                    "num_lines_executed_by_ccts INT",
+                    "num_total_lines_executed INT",
+                    "num_total_lines INT",
+                    "num_funcs_executed_by_failing_tcs INT",
+                    "num_total_funcs INT",
+
                     "mut_op TEXT",
                     "pre_start_line INT",
                     "pre_start_col INT",
@@ -191,7 +216,7 @@ class MutantBugGenerator(Engine):
                     "post_start_col INT",
                     "post_end_line INT",
                     "post_end_col INT",
-                    "post_mut TEXT"
+                    "post_mut TEXT",
                 ]
                 col_str = ", ".join(columns)
                 self.DB.create_table("cpp_bug_info", col_str)
