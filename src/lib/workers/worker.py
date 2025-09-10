@@ -6,6 +6,8 @@ from lib.experiment_configs import ExperimentConfigs
 from lib.subject import Subject
 from lib.factories.file_manager_factory import FileManagerFactory
 from lib.database import CRUD
+from lib.mutant import Mutant
+from lib.worker_context import WorkerContext
 
 from utils.command_utils import *
 
@@ -14,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 class Worker(ABC):
     def __init__(self, CONFIG: ExperimentConfigs):
         self.CONFIG = CONFIG
-        self.SUBJECT = Subject(self.CONFIG)
+        self.SUBJECT = Subject(self.CONFIG.ARGS.subject)
         self.FILE_MANAGER = FileManagerFactory.create_file_manager(
             self.CONFIG.ARGS.is_remote
         )
@@ -25,6 +27,9 @@ class Worker(ABC):
 
         # Set up all directories
         self._set_directories()
+
+        # Create context for executors with updated paths
+        self.CONTEXT = self._create_context()
     
     def _initialize_paths(self):
         """Initialize all directory and file paths"""
@@ -46,6 +51,24 @@ class Worker(ABC):
             user=self.CONFIG.ENV["DB_USER"],
             password=self.CONFIG.ENV["DB_PASSWORD"],
             database=self.CONFIG.ENV["DB"]
+        )
+
+    def _create_context(self) -> WorkerContext:
+        return WorkerContext(
+            CONFIG=self.CONFIG,
+            FILE_MANAGER=self.FILE_MANAGER,
+            SUBJECT=self.SUBJECT,
+            tools_dir=self.tools_dir,
+            log_dir=self.log_dir,
+            out_dir=self.out_dir,
+            working_dir=self.working_dir,
+            working_env_dir=self.working_env_dir,
+            subject_repo=self.subject_repo,
+            testcases_dir=self.testcases_dir,
+            coverage_dir=self.coverage_dir,
+            line2function_dir=self.line2function_dir,
+            musicup_exec=self.musicup_exec,
+            extractor_exec=self.extractor_exec
         )
     
     def _set_directories(self):
@@ -110,6 +133,12 @@ class Worker(ABC):
         self.coverage_dir = os.path.join(self.core_dir, "coverage")
         LOGGER.debug(f"Coverage directory: {self.coverage_dir}")
 
+        # line2function out dir
+        self.line2function_dir = os.path.join(self.out_dir, "line2function")
+        if not os.path.exists(self.line2function_dir):
+            os.makedirs(self.line2function_dir)
+        LOGGER.debug(f"Line2Function output directory: {self.line2function_dir}")
+
     def update_status_column_in_db(self, bug_idx: int, col_key: str):
         self.DB.update(
             "cpp_bug_info",
@@ -127,3 +156,33 @@ class Worker(ABC):
         """Optional stop method that subclasses can override"""
         pass
 
+
+    def make_mutant(self):
+        # set MUTANT
+        target_file = self.CONFIG.ARGS.target_file
+        target_file_path = os.path.join(self.core_dir, target_file)
+        if not os.path.exists(target_file_path):
+            LOGGER.error(f"Target file {target_file_path} does not exist")
+            return
+
+        mutant_file = self.CONFIG.ARGS.mutant
+        mutant_file_path = os.path.join(self.core_dir, f"{self.CONFIG.STAGE}-assigned_works", mutant_file)
+        if not os.path.exists(mutant_file_path):
+            LOGGER.error(f"Mutant file {mutant_file_path} does not exist")
+            return
+    
+        # 1. Patch target_file with mutant_file
+        patch_file = os.path.join(self.patch_dir, f"{self.CONFIG.ARGS.mutant}.patch")
+        MUTANT = Mutant(
+            self.CONFIG.ARGS.subject,
+            self.CONFIG.ARGS.experiment_label,
+            target_file, target_file_path, 
+            mutant_file, mutant_file_path,
+            patch_file, self.subject_repo
+        )
+        res = MUTANT.make_path_file()
+        if not res:
+            LOGGER.error(f"Failed to create patch file {patch_file}, skipping mutant")
+            return
+        LOGGER.info(f"Patch file created at {patch_file}")
+        return MUTANT

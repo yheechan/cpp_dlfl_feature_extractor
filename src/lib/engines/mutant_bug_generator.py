@@ -203,8 +203,6 @@ class MutantBugGenerator(Engine):
                     "num_lines_executed_by_ccts INT",
                     "num_total_lines_executed INT",
                     "num_total_lines INT",
-                    "num_funcs_executed_by_failing_tcs INT",
-                    "num_total_funcs INT",
 
                     "mut_op TEXT",
                     "pre_start_line INT",
@@ -235,10 +233,14 @@ class MutantBugGenerator(Engine):
 
                     "bit_sequence_length INT",
                     "line_coverage_bit_sequence TEXT",
+                    "full_bit_sequence_length INT",
+                    "full_line_coverage_bit_sequence TEXT",
 
                     "exception_type TEXT",
                     "exception_msg TEXT",
                     "stacktrace TEXT",
+
+                    "relevant_tcs BOOLEAN DEFAULT NULL",
 
                     "FOREIGN KEY (bug_idx) REFERENCES cpp_bug_info(bug_idx) ON DELETE CASCADE ON UPDATE CASCADE" # -- Automatically delete tc_info rows when bug_info is deleted, Update changes in bug_info to tc_info
                 ]

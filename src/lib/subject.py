@@ -7,9 +7,8 @@ from lib.experiment_configs import ExperimentConfigs
 LOGGER = logging.getLogger(__name__)
 
 class Subject():
-    def __init__(self, CONFIG: ExperimentConfigs):
-        self.CONFIG = CONFIG
-        self.name = CONFIG.ARGS.subject
+    def __init__(self, name: str):
+        self.name = name
         LOGGER.info("Subject initialized")
     
     def set_files(self, repo_dir: str = None):

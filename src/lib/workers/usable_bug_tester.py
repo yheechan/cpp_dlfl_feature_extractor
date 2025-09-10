@@ -14,7 +14,7 @@ class UsableBugTester(Worker):
 
         self.version_coverage_dir = os.path.join(self.coverage_dir, self.CONFIG.ARGS.mutant)
         if not os.path.exists(self.version_coverage_dir):
-            os.makedirs(self.version_coverage_dir)
+            os.makedirs(self.version_coverage_dir, exist_ok=True)
         LOGGER.debug(f"Version coverage directory: {self.version_coverage_dir}")
 
     def execute(self):
@@ -31,11 +31,11 @@ class UsableBugTester(Worker):
         execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
         self.SUBJECT.set_environmental_variables(self.core_dir)
 
-        # 4. Test mutant
+        # 3. Test mutant
         LOGGER.info("Testing mutants for usability")
         self.test_mutant()
 
-        # 5. remove coverage directory
+        # 4. remove coverage directory
         if os.path.exists(self.version_coverage_dir):
             shutil.rmtree(self.version_coverage_dir)
             LOGGER.debug(f"Removed version coverage directory: {self.version_coverage_dir}")
@@ -43,48 +43,23 @@ class UsableBugTester(Worker):
     def test_mutant(self):
         LOGGER.debug(f"target_file: {self.CONFIG.ARGS.target_file}, mutant: {self.CONFIG.ARGS.mutant}")
         # set MUTANT
-        target_file = self.CONFIG.ARGS.target_file
-        target_file_path = os.path.join(self.core_dir, target_file)
-        if not os.path.exists(target_file_path):
-            LOGGER.error(f"Target file {target_file_path} does not exist")
-            return
-
-        mutant_file = self.CONFIG.ARGS.mutant
-        mutant_file_path = os.path.join(self.core_dir, f"{self.CONFIG.STAGE}-assigned_works", mutant_file)
-        if not os.path.exists(mutant_file_path):
-            LOGGER.error(f"Mutant file {mutant_file_path} does not exist")
-            return
-    
-        # 1. Patch target_file with mutant_file
-        patch_file = os.path.join(self.patch_dir, f"{self.CONFIG.ARGS.mutant}.patch")
-        MUTANT = Mutant(
-            self.CONFIG.ARGS.subject,
-            self.CONFIG.ARGS.experiment_label,
-            target_file, target_file_path, 
-            mutant_file, mutant_file_path,
-            patch_file, self.subject_repo
-        )
-        res = MUTANT.make_path_file()
-        if not res:
-            LOGGER.error(f"Failed to create patch file {patch_file}, skipping mutant")
-            return
-        LOGGER.info(f"Patch file created at {patch_file}")
+        MUTANT = self.make_mutant()
 
         # 1.1 set MUTANT basic info
         MUTANT.set_bug_idx_from_db(self.DB)
         MUTANT.set_tc_info_from_db(self.DB)
-        MUTANT.set_filtered_files_for_gcovr(self.SUBJECT, self.CONFIG.ENV["LANGUAGE"])
+        MUTANT.set_filtered_files_for_gcovr(self.CONTEXT)
 
         # 2. Apply patch to taget_file
         res = MUTANT.apply_patch(revert=False)
         if not res:
-            LOGGER.error(f"Failed to apply patch {patch_file} to {target_file}, skipping mutant")
+            LOGGER.error(f"Failed to apply patch {MUTANT.patch_file} to {MUTANT.target_file}, skipping mutant")
             return
 
         # 3. Build the subject, if build fails, skip the mutant
         res = execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
         if res != 0:
-            LOGGER.warning(f"Build failed after applying patch {patch_file}, skipping mutant")
+            LOGGER.warning(f"Build failed after applying patch {MUTANT.patch_file}, skipping mutant")
             MUTANT.apply_patch(revert=True)
             return
 
@@ -96,24 +71,19 @@ class UsableBugTester(Worker):
             # 4.2 run the failing test case
             res = MUTANT.run_test_with_testScript(os.path.join(self.testcases_dir, tc_name))
             if res == 0:
-                LOGGER.warning(f"Failing test case {tc_name} passed after applying mutant {mutant_file}, something is wrong, skipping mutant")
+                LOGGER.warning(f"Failing test case {tc_name} passed after applying mutant {MUTANT.mutant_file}, something is wrong, skipping mutant")
                 MUTANT.apply_patch(revert=True)
                 return
 
             # 4.3 remove untargeted files for gcovr
-            MUTANT.remove_untargeted_files_for_gcovr(self.subject_repo)
+            MUTANT.remove_untargeted_files_for_gcovr(self.CONTEXT)
 
             # 4-4. Collect coverage
-            raw_cov_file = MUTANT.generate_coverage_json(
-                self.SUBJECT,
-                {"exec": self.CONFIG.ENV["GCOVR_EXEC"], "version": self.CONFIG.ENV["GCOVR_VERSION"]},
-                self.version_coverage_dir,
-                tc_name
-            )
+            raw_cov_file = MUTANT.generate_coverage_json(self.CONTEXT, tc_name)
 
             # 4-5 Check if the buggy line is coveraged
             buggy_line_covered = MUTANT.check_buggy_line_covered(
-                self.SUBJECT, tc_name, raw_cov_file
+                self.CONTEXT, tc_name, raw_cov_file
             )
             if buggy_line_covered == 1:
                 LOGGER.debug(f"Buggy line {MUTANT.buggy_lineno} is NOT COVERED by failing test case {tc_name}")

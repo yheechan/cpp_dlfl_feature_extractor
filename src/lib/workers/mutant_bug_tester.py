@@ -51,40 +51,12 @@ class MutantBugTester(Worker):
 
     def test_mutant(self):
         # Set MUTANT
-        target_file = self.CONFIG.ARGS.target_file
-        target_file_path = os.path.join(self.core_dir, target_file)
-        if not os.path.exists(target_file_path):
-            LOGGER.error(f"Target file {target_file_path} does not exist")
-            return
-
-        mutant_file = self.CONFIG.ARGS.mutant
-        mutant_file_path = os.path.join(self.core_dir, f"{self.CONFIG.STAGE}-assigned_works", mutant_file)
-        if not os.path.exists(mutant_file_path):
-            LOGGER.error(f"Mutant file {mutant_file_path} does not exist")
-            return
-        
-        
-        # 1. Patch target_file with mutant_file
-        patch_file = os.path.join(self.patch_dir, f"{self.CONFIG.ARGS.mutant}.patch")
-        MUTANT = Mutant(
-            self.CONFIG.ARGS.subject,
-            self.CONFIG.ARGS.experiment_label,
-            target_file, target_file_path, 
-            mutant_file, mutant_file_path,
-            patch_file, self.subject_repo
-        )
-
-        res = MUTANT.make_path_file()
-        if not res:
-            LOGGER.error(f"Failed to create patch file {patch_file}, skipping mutant")
-            return
-        LOGGER.info(f"Patch file created at {patch_file}")
-
+        MUTANT = self.make_mutant()
 
         # 2. Apply patch to taget_file
         res = MUTANT.apply_patch(revert=False)
         if not res:
-            LOGGER.error(f"Failed to apply patch {patch_file} to {target_file}, skipping mutant")
+            LOGGER.error(f"Failed to apply patch {MUTANT.patch_file} to {MUTANT.target_file}, skipping mutant")
             MUTANT.mutant_type = "patch_failure"
             MUTANT.apply_patch(revert=True)
             self.save_mutant(MUTANT, None)

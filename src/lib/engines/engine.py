@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 class Engine(ABC):
     def __init__(self, CONFIG: ExperimentConfigs):
         self.CONFIG = CONFIG
-        self.SUBJECT = Subject(self.CONFIG)
+        self.SUBJECT = Subject(self.CONFIG.ARGS.subject)
         self.FILE_MANAGER = FileManagerFactory.create_file_manager(
             self.CONFIG.ARGS.is_remote
         )
