@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
 import os
-import subprocess as sp
 
 from lib.experiment_configs import ExperimentConfigs
 from lib.subject import Subject

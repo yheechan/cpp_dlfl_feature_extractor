@@ -6,6 +6,7 @@ from lib.experiment_configs import ExperimentConfigs
 from lib.engines.engine import Engine
 from lib.engines.mutant_bug_generator import MutantBugGenerator
 from lib.engines.usable_bug_selector import UsableBugSelector
+from lib.engines.prerequisite_data_extractor import PrerequisiteDataExtractor
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class EngineFactory:
     _engines: Dict[str, Type[Engine]] = {
         "mutant_bug_generator": MutantBugGenerator,
         "usable_bug_selector": UsableBugSelector,
+        "prerequisite_data_extractor": PrerequisiteDataExtractor,
         # Add more engines here as you implement them
         # "feature_extractor": FeatureExtractor,
         # "code_analyzer": CodeAnalyzer,

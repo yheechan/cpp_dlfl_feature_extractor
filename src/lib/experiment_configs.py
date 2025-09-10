@@ -8,6 +8,8 @@ class ExperimentConfigs:
         "mutant_bug_tester": "stage01",
         "usable_bug_selector": "stage02",
         "usable_bug_tester": "stage02",
+        "prerequisite_data_extractor": "stage03",
+        "prerequisite_data_tester": "stage03",
     }
     # def __init__(self, args: argparse.Namespace):
     def __init__(self):

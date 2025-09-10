@@ -5,6 +5,7 @@ from lib.experiment_configs import ExperimentConfigs
 from lib.workers.worker import Worker
 from lib.workers.mutant_bug_tester import MutantBugTester
 from lib.workers.usable_bug_tester import UsableBugTester
+from lib.workers.prerequisite_data_tester import PrerequisiteDataTester
 
 LOGGER = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ class WorkerFactory:
     _workers: Dict[str, Type[Worker]] = {
         "mutant_bug_tester": MutantBugTester,
         "usable_bug_tester": UsableBugTester,
+        "prerequisite_data_tester": PrerequisiteDataTester,
         # Add more workers here as you implement them
         # "code_reviewer": CodeReviewer,
         # "test_runner": TestRunner,
