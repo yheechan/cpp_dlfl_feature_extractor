@@ -81,6 +81,9 @@ class PrerequisiteDataTester(Worker):
         # 6. postprocess coverage info
         MUTANT.postprocess_coverage_info(self.CONTEXT, self.DB)
 
+        # 7. Extract stack trace for failing tests
+        MUTANT.extract_stack_trace_for_failing_tests(self.CONTEXT, self.DB)
+
     def stop(self):
         """Stop the Prerequisite Data Testing process"""
         LOGGER.info("Stopping Prerequisite Data Tester")

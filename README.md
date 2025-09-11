@@ -13,6 +13,11 @@ $ cd ./tools/extractor/
 $ make -j20
 ```
 
+### Test command
+```
+PYTHONPATH=. pytest -s tests/test_gdb_utils.py::test_extract_execution_cmd_from_test_script_file
+```
+
 
 ### Stage01: Mutant Bug Generator
 ```

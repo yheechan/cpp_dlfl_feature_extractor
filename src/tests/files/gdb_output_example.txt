@@ -1,0 +1,41 @@
+Breakpoint 1 at 0x7e832: adler32_avx2.c:82. (2 locations)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+Running main() from /ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core0/zlib_ng/test/test_main.cc
+Note: Google Test filter = adler32/adler32_variant.avx2/140
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from adler32/adler32_variant
+[ RUN      ] adler32/adler32_variant.avx2/140
+
+Breakpoint 1, adler32_fold_copy_impl (COPY=0, len=4, src=0x55555560f4e0 "VDh?q&_u.UWJU],-GiH7ADzb7-V.Q%4=+v!$L9W+T=bP]$_:]Vyg}A.ygD.r;h-D]m%&", dst=0x0, adler=3126770193) at /ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core0/zlib_ng/arch/x86/adler32_avx2.c:82
+82                vs1_0 = vs1;
+#0  adler32_fold_copy_impl (COPY=0, len=4, src=0x55555560f4e0 "VDh?q&_u.UWJU],-GiH7ADzb7-V.Q%4=+v!$L9W+T=bP]$_:]Vyg}A.ygD.r;h-D]m%&", dst=0x0, adler=3126770193) at /ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core0/zlib_ng/arch/x86/adler32_avx2.c:82
+#1  adler32_avx2 (adler=3126770193, src=0x55555560f4c0 "h{bcmdC+a;t+Cf{6Y_dFq-{X4Yu&7uNfVDh?q&_u.UWJU],-GiH7ADzb7-V.Q%4=+v!$L9W+T=bP]$_:]Vyg}A.ygD.r;h-D]m%&", len=100) at /ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core0/zlib_ng/arch/x86/adler32_avx2.c:139
+#2  0x000055555559dc2b in adler32_variant::hash(adler32_test, unsigned int (*)(unsigned int, unsigned char const*, unsigned long)) ()
+#3  0x000055555559c777 in adler32_variant_avx2_Test::TestBody() ()
+#4  0x000055555560964f in void testing::internal::HandleExceptionsInMethodIfSupported<testing::Test, void>(testing::Test*, void (testing::Test::*)(), char const*) ()
+#5  0x00005555555fd486 in testing::Test::Run() ()
+#6  0x00005555555fd605 in testing::TestInfo::Run() ()
+#7  0x00005555555fdbb9 in testing::TestSuite::Run() ()
+#8  0x00005555555fe2bf in testing::internal::UnitTestImpl::RunAllTests() ()
+#9  0x0000555555609c17 in bool testing::internal::HandleExceptionsInMethodIfSupported<testing::internal::UnitTestImpl, bool>(testing::internal::UnitTestImpl*, bool (testing::internal::UnitTestImpl::*)(), char const*) ()
+#10 0x00005555555fd6cc in testing::UnitTest::Run() ()
+#11 0x000055555557ab80 in main ()
+/ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core0/zlib_ng/test/test_adler32.cc:351: Failure
+Expected equality of these values:
+  adler
+    Which is: 1
+  param.expect
+    Which is: 3029063896
+[  FAILED  ] adler32/adler32_variant.avx2/140, where GetParam() = 24-byte object <11-BA 5E-BA 00-00 00-00 C0-F4 60-55 55-55 00-00 64-00 00-00 D8-D8 8B-B4> (12 ms)
+[----------] 1 test from adler32/adler32_variant (12 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (12 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] adler32/adler32_variant.avx2/140, where GetParam() = 24-byte object <11-BA 5E-BA 00-00 00-00 C0-F4 60-55 55-55 00-00 64-00 00-00 D8-D8 8B-B4>
+
+ 1 FAILED TEST
+[Inferior 1 (process 2336642) exited with code 01]

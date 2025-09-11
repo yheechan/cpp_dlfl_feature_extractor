@@ -7,6 +7,8 @@ from lib.database import CRUD
 from lib.worker_context import WorkerContext
 
 from utils.command_utils import *
+from utils.gdb_utils import *
+from utils.bitwise_utils import *
 
 LOGGER = logging.getLogger(__name__)
 
@@ -366,7 +368,7 @@ class Mutant:
             self.apply_patch(revert=True)
             return False
         
-        for test_type in ["fail", "pass"]:
+        for test_type in ["fail", "pass", "cctc"]:
             for tc_idx, tc_name in self.tc_info[test_type]:
                 # 2.1 remove all gcda files
                 self.remove_all_gcda()
@@ -486,33 +488,6 @@ class Mutant:
             tcsIdx2lineCovBitVal[tc_idx] = int("".join(lineCovBitSeq), 2)
         return tcsIdx2lineCovBitVal
     
-    def merge_lineCovBitVal(self, tcs2lineCovBitVal: dict):
-        merged_lineCovBitVal = 0
-        for tc_idx, lineCovBitVal in tcs2lineCovBitVal.items():
-            merged_lineCovBitVal |= lineCovBitVal
-        return merged_lineCovBitVal
-    
-    def identify_not_relevant_tcs(self, tcs2lineCovBitVal: dict, stdBitVal: int):
-        notRelevantTCs = []
-        for tc_idx, lineCovBitVal in tcs2lineCovBitVal.items():
-            if (lineCovBitVal & stdBitVal) == 0:
-                notRelevantTCs.append(tc_idx)
-        return notRelevantTCs
-    
-    def reform_covBitVal_to_candidate_lines(self, tcs2lineCovBitVal: dict, candidate_lineKeys2newlineIdx: dict, numTotalLines: int):
-        tcsIdx2lineCovBitVal = {}
-        for tc_idx, lineCovBitVal in tcs2lineCovBitVal.items():
-            lineCovBitSeq = ['0'] * len(candidate_lineKeys2newlineIdx)
-            lineCovBitValStr = format(lineCovBitVal, f'0{numTotalLines}b')
-            for bitCharIdx, bitChar in enumerate(lineCovBitValStr):
-                if bitChar == '1':
-                    lineKey = self.lineIdx2lineKey[bitCharIdx]
-                    if lineKey in candidate_lineKeys2newlineIdx:
-                        newIdx = candidate_lineKeys2newlineIdx[lineKey]
-                        lineCovBitSeq[newIdx] = '1'
-            tcsIdx2lineCovBitVal[tc_idx] = int("".join(lineCovBitSeq), 2)
-        return tcsIdx2lineCovBitVal
-    
     def save_candidate_lines_to_db(self, DB: CRUD, candidate_lineKeys2newlineIdx: dict):
         buggy_file, buggy_function, buggy_lineno = self.buggy_line_key.split("#")
         for lineKey, newIdx in candidate_lineKeys2newlineIdx.items():
@@ -612,17 +587,17 @@ class Mutant:
         numTotalLines = len(self.lineKey2lineIdx)
 
         failTcs2lineCovBitVal = self.get_lineCovBitVal_from_tc_list(CONTEXT, self.tc_info["fail"])
-        failLinesBitVal = self.merge_lineCovBitVal(failTcs2lineCovBitVal)
+        failLinesBitVal = merge_lineCovBitVal(failTcs2lineCovBitVal)
         failLinesBitValStr = format(failLinesBitVal, f'0{len(self.lineKey2lineIdx)}b')
         numLinesExecutedByFailingTCs = failLinesBitValStr.count("1")
 
         passTcs2lineCovBitVal = self.get_lineCovBitVal_from_tc_list(CONTEXT, self.tc_info["pass"])
-        passLinesBitVal = self.merge_lineCovBitVal(passTcs2lineCovBitVal)
+        passLinesBitVal = merge_lineCovBitVal(passTcs2lineCovBitVal)
         passLinesBitValStr = format(passLinesBitVal, f'0{len(self.lineKey2lineIdx)}b')
         numLinesExecutedByPassingTCs = passLinesBitValStr.count("1")
 
         cctcTcs2lineCovBitVal = self.get_lineCovBitVal_from_tc_list(CONTEXT, self.tc_info["cctc"])
-        cctcLinesBitVal = self.merge_lineCovBitVal(cctcTcs2lineCovBitVal)
+        cctcLinesBitVal = merge_lineCovBitVal(cctcTcs2lineCovBitVal)
         cctcLinesBitValStr = format(cctcLinesBitVal, f'0{len(self.lineKey2lineIdx)}b')
         numLinesExecutedByCCTCs = cctcLinesBitValStr.count("1")
 
@@ -646,8 +621,8 @@ class Mutant:
         # 5. Identify not-relevant test cases among passing and cctc test cases
         # not-relevant test cases are test cases that do not cover any candidate lines
         notRelevantTCs = []
-        passIrrelevant = self.identify_not_relevant_tcs(passTcs2lineCovBitVal, failLinesBitVal)
-        cctcsIrrelevant = self.identify_not_relevant_tcs(cctcTcs2lineCovBitVal, failLinesBitVal)
+        passIrrelevant = identify_not_relevant_tcs(passTcs2lineCovBitVal, failLinesBitVal)
+        cctcsIrrelevant = identify_not_relevant_tcs(cctcTcs2lineCovBitVal, failLinesBitVal)
         LOGGER.debug(f"Identified {len(passIrrelevant)} irrelevant passing test cases")
         LOGGER.debug(f"Identified {len(cctcsIrrelevant)} irrelevant cctc test cases")
         notRelevantTCs.extend(passIrrelevant)
@@ -657,9 +632,9 @@ class Mutant:
         self.update_tc_result_to_irrelevant(DB, notRelevantTCs)
 
         # 6. Reform covBitVal to only include candidate lines
-        reformedFailTcs2lineCovBitVal = self.reform_covBitVal_to_candidate_lines(failTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines)
-        reformedPassTcs2lineCovBitVal = self.reform_covBitVal_to_candidate_lines(passTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines)
-        reformedCctcTcs2lineCovBitVal = self.reform_covBitVal_to_candidate_lines(cctcTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines)
+        reformedFailTcs2lineCovBitVal = reform_covBitVal_to_candidate_lines(failTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines, self.lineIdx2lineKey)
+        reformedPassTcs2lineCovBitVal = reform_covBitVal_to_candidate_lines(passTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines, self.lineIdx2lineKey)
+        reformedCctcTcs2lineCovBitVal = reform_covBitVal_to_candidate_lines(cctcTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines, self.lineIdx2lineKey)
 
         self.save_lineCovBit_to_db(DB, failTcs2lineCovBitVal, "fail", "full_", numTotalLines)
         self.save_lineCovBit_to_db(DB, passTcs2lineCovBitVal, "pass", "full_", numTotalLines)
@@ -694,4 +669,47 @@ class Mutant:
                 "version": self.mutant_name
             }
         )
+
+    def extract_execution_command(self, tc_script: str) -> str:
+        # PROBABLITY WILL NEED TO MODIFY FOR THIS FOR DIFFERENT SUBJECT
+        # BECAUSE DIFFERENT SUBJECTS HAVE DIFFERENT TEST SCRIPT FORMATS
+        return extract_execution_cmd_from_test_script_file(tc_script)
+
+    def extract_stack_trace_for_failing_tests(self, CONTEXT: WorkerContext, DB: CRUD):
+        test_execution_point = os.path.join(self.core_dir, CONTEXT.SUBJECT.subject_configs["testcase_execution_point"])
+        source_code_filename = self.target_code_file.split("/")[-1]
+        line_number = self.buggy_lineno
+        for tc_idx, tc_name in self.tc_info["fail"]:
+            tc_script_path = os.path.join(CONTEXT.testcases_dir, tc_name)
+
+            # 1. make execution command
+            execution_cmd = self.extract_execution_command(tc_script_path)
+            
+            # 2. make gdb script
+            gdb_script_txt = make_gdb_script_txt(test_execution_point, source_code_filename, line_number)
+
+            # 3. run gdb
+            gdb_cmd = f"gdb -x gdb_script.txt -batch --args {execution_cmd}"
+            gdb_result = sp.run(
+                    gdb_cmd,
+                    shell=True,
+                    stderr=sp.PIPE,
+                    stdout=sp.PIPE,
+                    encoding="utf-8",
+                    cwd=test_execution_point
+                )
+            
+            bt_list = parse_gdb_output_for_stack_trace(gdb_result.stdout.split("\n"))
+            stack_trace = "".join(bt_list)
+
+            # 4. save stack trace to DB
+            DB.update(
+                "cpp_tc_info",
+                set_values={"stacktrace": stack_trace},
+                conditions={
+                    "bug_idx": self.bug_idx,
+                    "tc_idx": tc_idx,
+                    "tc_name": tc_name
+                }
+            )
 
