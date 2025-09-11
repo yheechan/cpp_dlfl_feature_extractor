@@ -1,5 +1,5 @@
 import logging
-from pathlib import Path
+import random
 
 from lib.engines.engine import Engine
 from lib.experiment_configs import ExperimentConfigs
@@ -21,7 +21,15 @@ class MutantMutantGenerator(Engine):
         self._initialize_required_tables()
 
         # Get target mutants to generate mutants from
-        mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and mbfl IS NULL")
+        mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS NULL")
+
+        # Randomly select the number of CONFIG.ENV["NUMBER_BUGS_TO_TEST_FOR_MUTATION_TESTING_RESULTS"]
+        if len(mutant_list) > int(self.CONFIG.ENV["NUMBER_BUGS_TO_TEST_FOR_MUTATION_TESTING_RESULTS"]):
+            mutant_list = random.sample(mutant_list, int(self.CONFIG.ENV["NUMBER_BUGS_TO_TEST_FOR_MUTATION_TESTING_RESULTS"]))
+            LOGGER.debug(f"Randomly selected {len(mutant_list)} mutants for mutant mutant generation")
+        else:
+            LOGGER.debug(f"Total mutants to process: {len(mutant_list)}")
+
 
         self._start_generating_mutants(mutant_list)
     
@@ -29,13 +37,12 @@ class MutantMutantGenerator(Engine):
         """Initialize required tables and columns in the database"""
         def _init_cpp_mutant_mutant_info_table():
             # Create cpp_mutant_mutant_info table if it doesn't exist
-            if not self.DB.table_exists("cpp_mutant_info"):
+            if not self.DB.table_exists("cpp_mutation_info"):
                 cols = [
                     "bug_idx INT NOT NULL", # -- Foreign key to bug_info(bug_idx)
                     "is_for_test BOOLEAN DEFAULT NULL",
                     "build_result BOOLEAN DEFAULT NULL",
                     "targetting_file TEXT",
-                    "mutation_dirname TEXT",
                     "mutant_filename TEXT",
                     "mutant_idx INT",
                     "line_idx INT",

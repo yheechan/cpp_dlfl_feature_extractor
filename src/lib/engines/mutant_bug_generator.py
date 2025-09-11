@@ -147,7 +147,7 @@ class MutantBugGenerator(Engine):
     def _get_generated_mutants(self, target_file_info_list: list) -> dict:
         mutant_list = []
         
-        extension = "*.c" if self.CONFIG.ENV["LANGUAGE"] == "c" else "*.cpp"
+        extension = "*.c" if self.SUBJECT.subject_configs["subject_language"] == "C" else "*.cpp"
 
         for target_file, target_file_path, target_file_mutant_dir_path in target_file_info_list:
             LOGGER.debug(f"Collecting mutants from {target_file_mutant_dir_path}")
@@ -185,7 +185,7 @@ class MutantBugGenerator(Engine):
                     "usable BOOLEAN DEFAULT NULL",
                     "prerequisites BOOLEAN DEFAULT NULL",
                     "selected_for_mbfl BOOLEAN DEFAULT NULL",
-                    "mutant_generated BOOLEAN DEFAULT NULL",
+                    "mutants_generated BOOLEAN DEFAULT NULL",
                     "mbfl BOOLEAN DEFAULT NULL",
                     "mbfl_cpu_time FLOAT",
 

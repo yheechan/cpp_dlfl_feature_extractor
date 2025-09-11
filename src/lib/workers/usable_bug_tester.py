@@ -33,14 +33,14 @@ class UsableBugTester(Worker):
 
         # 3. Test mutant
         LOGGER.info("Testing mutants for usability")
-        self.test_mutant()
+        self._test_mutant()
 
         # 4. remove coverage directory
         if os.path.exists(self.version_coverage_dir):
             shutil.rmtree(self.version_coverage_dir)
             LOGGER.debug(f"Removed version coverage directory: {self.version_coverage_dir}")
 
-    def test_mutant(self):
+    def _test_mutant(self):
         LOGGER.debug(f"target_file: {self.CONFIG.ARGS.target_file}, mutant: {self.CONFIG.ARGS.mutant}")
         # set MUTANT
         MUTANT = self.make_mutant()

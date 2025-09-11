@@ -101,6 +101,13 @@ class ExperimentConfigs:
             help="Indicate if the worker needs configuration"
         )
 
+        # Only required for Stage05 worker: mutation_testing_result_extractor
+        self.PARSER.add_argument(
+            "-bid", "--bug-id",
+            type=int,
+            help="Specify the bug ID for mutation testing result extraction"
+        )
+
         self.ARGS = self.PARSER.parse_args()
 
     def set_machine_status(self):

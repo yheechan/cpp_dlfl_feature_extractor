@@ -34,7 +34,7 @@ class Mutant:
         self.bug_idx = None
         self.tc_info = {"fail": [], "pass": [], "crashed": [], "cctc": []}
 
-    def make_path_file(self):
+    def make_patch_file(self):
         cmd = ["diff", self.target_file_path, self.mutant_file_path]
         try:
             res = sp.run(cmd, stdout=open(self.patch_file, 'w'))
@@ -123,6 +123,29 @@ class Mutant:
         LOGGER.debug(f"crashed test cases: {len(self.tc_info['crashed'])}")
         LOGGER.debug(f"cctc test cases: {len(self.tc_info['cctc'])}")
 
+    def set_line_info_from_db(self, DB: CRUD):
+        line_info = DB.read(
+            "cpp_line_info",
+            columns="line_idx, file, function, lineno",
+            conditions={"bug_idx": self.bug_idx}
+        )
+
+        lineIdx2lineKey = {}
+        filename2lineNum2lineIdx = {}
+        for line_idx, filename, function_name, lineno in line_info:
+            lineIdx2lineKey[line_idx] = {
+                "file": filename,
+                "function": function_name,
+                "lineno": lineno
+            }
+
+            if filename not in filename2lineNum2lineIdx:
+                filename2lineNum2lineIdx[filename] = {}
+            filename2lineNum2lineIdx[filename][int(lineno)] = line_idx
+
+        self.lineIdx2lineKey = lineIdx2lineKey
+        self.filename2lineNum2lineIdx = filename2lineNum2lineIdx
+
     def remove_all_gcda(self):
         cmd = [
             "find", ".", "-type", "f",
@@ -140,7 +163,7 @@ class Mutant:
             target_file = target_file.split("/")[-1]
             if "uriparser" in self.subject or "zlib_ng" in self.subject: # uriparser's gcno and gcda files include .c extension
                 filename = target_file
-            elif CONTEXT.CONFIG.ENV["LANGUAGE"] == "c":
+            elif CONTEXT.SUBJECT.subject_configs["subject_language"] == "C":
                 # get filename without extension
                 # remember the filename can be x.y.cpp
                 filename = ".".join(target_file.split(".")[:-1])
@@ -175,13 +198,13 @@ class Mutant:
             src_root_dir = os.path.join(self.core_dir, CONTEXT.SUBJECT.subject_configs["gcovr_source_root"])
             if float(CONTEXT.CONFIG.ENV["GCOVR_VERSION"]) < 7.2:
                 cmd.extend([
-                    "--object-directory", obj_dir.__str__(),
-                    "--root", src_root_dir.__str__(),
+                    "--object-directory", obj_dir,
+                    "--root", src_root_dir,
                 ])
             else:
                 cmd.extend([
-                    "--gcov-object-directory", obj_dir.__str__(),
-                    "--root", src_root_dir.__str__(),
+                    "--gcov-object-directory", obj_dir,
+                    "--root", src_root_dir,
                 ])
             cov_cwd=obj_dir
         cmd.extend([
@@ -422,22 +445,6 @@ class Mutant:
         LOGGER.debug(f"Updated {len(self.tc_info['cctc'])} cctcs for mutant {self.mutant_name} in DB")
         return
 
-    def get_lineKey2lineIdx_from_coverage_raw_file(self, raw_cov_file: str):
-        with open(raw_cov_file, 'r') as f:
-            cov_data = json.load(f)
-        
-        lineKey2lineIdx = {}
-        lineIdx2lineKey = {}
-        for file in cov_data["files"]:
-            filename = file["file"]
-            for lineIdx, lineData in enumerate(file["lines"]):
-                line_number = lineData["line_number"]
-                key = self.make_key(filename, line_number)
-                lineKey2lineIdx[key] = lineIdx
-                lineIdx2lineKey[lineIdx] = key
-        self.lineKey2lineIdx = lineKey2lineIdx
-        self.lineIdx2lineKey = lineIdx2lineKey
-
     def get_lineKey2lineIdx_from_all_coverage_files(self, CONTEXT: WorkerContext):
         all_line_keys = set()
         
@@ -671,6 +678,7 @@ class Mutant:
         )
 
     def extract_execution_command(self, tc_script: str) -> str:
+        # TODO:
         # PROBABLITY WILL NEED TO MODIFY FOR THIS FOR DIFFERENT SUBJECT
         # BECAUSE DIFFERENT SUBJECTS HAVE DIFFERENT TEST SCRIPT FORMATS
         return extract_execution_cmd_from_test_script_file(tc_script)

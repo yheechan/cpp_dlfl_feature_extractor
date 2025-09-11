@@ -187,7 +187,7 @@ class Worker(ABC):
             mutant_file, mutant_file_path,
             patch_file, self.subject_repo
         )
-        res = MUTANT.make_path_file()
+        res = MUTANT.make_patch_file()
         if not res:
             LOGGER.error(f"Failed to create patch file {patch_file}, skipping mutant")
             return
