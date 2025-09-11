@@ -19,6 +19,7 @@ class Mutant:
                     target_file: str = None, target_file_path: str = None,
                     mutant_file: str = None, mutant_file_path: str = None,
                     patch_file: str = None, repo_dir: str = None):
+        LOGGER.info("Mutant initialized")
         self.subject = subject
         self.experiment_label = experiment_label
         self.target_file = target_file

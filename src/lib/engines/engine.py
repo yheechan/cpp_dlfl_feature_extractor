@@ -168,7 +168,7 @@ class Engine(ABC):
         self.generated_mutants_dir = os.path.join(self.out_dir, "generated_mutants")
         res = self.DB.read(
             "cpp_bug_info",
-            columns="version, type, target_code_file, buggy_code_file",
+            columns="version, type, target_code_file, buggy_code_file, bug_idx",
             conditions={
                 "subject": self.CONFIG.ARGS.subject,
                 "experiment_label": self.CONFIG.ARGS.experiment_label,
@@ -177,11 +177,11 @@ class Engine(ABC):
         )
         
         mutant_list = []
-        for version, mutant_type, target_code_file, buggy_code_file in res:
+        for version, mutant_type, target_code_file, buggy_code_file, bug_idx in res:
             target_file_mutant_dir_name = target_code_file.replace("/", "#")
             target_file_mutant_dir_path = os.path.join(self.generated_mutants_dir, target_file_mutant_dir_name)
             mutant = Path(os.path.join(target_file_mutant_dir_path, buggy_code_file))
-            mutant_list.append((target_code_file, mutant, target_file_mutant_dir_path))
-        
+            mutant_list.append((target_code_file, mutant, target_file_mutant_dir_path, bug_idx))
+
         LOGGER.info(f"Total mutants to test: {len(mutant_list)}")
         return mutant_list

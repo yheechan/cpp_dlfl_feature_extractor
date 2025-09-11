@@ -177,8 +177,7 @@ class LocalExecutor(Executor):
         core_cnt = len(CONTEXT.CONFIG.MACHINE_CORE_LIST)
         task_queue = queue.Queue()
         for i, mutant in enumerate(mutant_list):
-            target_file, mutant, target_file_mutant_dir_path = mutant
-            task_queue.put((target_file, mutant))
+            task_queue.put((mutant[0], mutant[1]))
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=core_cnt) as executor:
             futures = [
@@ -251,8 +250,7 @@ class LocalExecutor(Executor):
         core_cnt = len(CONTEXT.CONFIG.MACHINE_CORE_LIST)
         task_queue = queue.Queue()
         for i, mutant in enumerate(mutant_list):
-            target_file, mutant, target_file_mutant_dir_path = mutant
-            task_queue.put((target_file, mutant))
+            task_queue.put((mutant[0], mutant[1]))
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=core_cnt) as executor:
             futures = [
@@ -325,8 +323,7 @@ class LocalExecutor(Executor):
         core_cnt = len(CONTEXT.CONFIG.MACHINE_CORE_LIST)
         task_queue = queue.Queue()
         for i, mutant in enumerate(mutant_list):
-            target_file, mutant, target_file_mutant_dir_path = mutant
-            task_queue.put((target_file, mutant))
+            task_queue.put((mutant[0], mutant[1]))
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=core_cnt) as executor:
             futures = [
@@ -342,4 +339,75 @@ class LocalExecutor(Executor):
     # stage05: Mutation Testing Result Tester
     def test_for_mutation_testing_results(self, CONTEXT: EngineContext, mutant_list: list):
         """Test for mutation testing results on local cores"""
-        raise NotImplementedError("LocalExecutor does not implement test_for_mutation_testing_results() method")
+        def _worker(task_queue, machine_info, CONTEXT: EngineContext):
+            machine_name, core_idx, home_directory = machine_info
+            machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
+            assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
+            
+            clean_script = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject, "clean_script.sh")
+            execute_bash_script(clean_script, os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject))
+
+            needs_configuration = True
+            while True:
+                try:
+                    task = task_queue.get(timeout=1)
+                    if task is None:
+                        break
+                    
+                    target_file, mutant, bug_idx, mutant_idx = task
+                    LOGGER.info(f"Worker {machine_name}::core{core_idx} processing mutant {mutant} for file {target_file}")
+
+                    # Copy mutant file to assigned works directory
+                    CONTEXT.FILE_MANAGER.copy_specific_file(mutant, assigned_works_dir)
+
+                    # TODO: Do not forget that target_file here is from cpp_mutation_info table
+                    cmd = [
+                        "python3", "main.py",
+                        "--experiment-label", CONTEXT.CONFIG.ARGS.experiment_label,
+                        "--subject", CONTEXT.CONFIG.ARGS.subject,
+                        "--worker-type", "mutation_testing_result_tester",
+                        "--machine", machine_name,
+                        "--core-idx", str(core_idx),
+                        "--target-file", target_file,
+                        "--mutant", mutant.name,
+                        "--bug-id", str(bug_idx),
+                        "--mutant-id", str(mutant_idx)
+                    ]
+                    if CONTEXT.CONFIG.ARGS.debug:
+                        cmd.append("--debug")
+                    if CONTEXT.CONFIG.ARGS.verbose:
+                        cmd.append("--verbose")
+                    if needs_configuration:
+                        cmd.append("--needs-configuration")
+                        needs_configuration = False
+                    
+
+                    # Execute the command
+                    execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+                    try:
+                        LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
+                    except Exception as e:
+                        LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an error: {e}")
+                    finally:
+                        task_queue.task_done()
+                except queue.Empty:
+                    break
+                except Exception as e:
+                    LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an unexpected error: {e}")
+            LOGGER.info(f"Worker {machine_name}::core{core_idx} exiting")
+
+        core_cnt = len(CONTEXT.CONFIG.MACHINE_CORE_LIST)
+        task_queue = queue.Queue()
+        for i, mutant in enumerate(mutant_list):
+            task_queue.put((mutant[0], mutant[1], mutant[2], mutant[3]))
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=core_cnt) as executor:
+            futures = [
+                executor.submit(_worker, task_queue, machine_info, CONTEXT)
+                for machine_info in CONTEXT.CONFIG.MACHINE_CORE_LIST
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    LOGGER.error(f"Error occurred during mutation testing result extraction: {e}")

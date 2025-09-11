@@ -107,6 +107,12 @@ class ExperimentConfigs:
             type=int,
             help="Specify the bug ID for mutation testing result extraction"
         )
+        
+        self.PARSER.add_argument(
+            "-mid", "--mutant-id",
+            type=int,
+            help="Specify the mutant ID for mutation testing result extraction"
+        )
 
         self.ARGS = self.PARSER.parse_args()
 

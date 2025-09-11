@@ -2,11 +2,13 @@ import logging
 from typing import Dict, Type
 
 from lib.experiment_configs import ExperimentConfigs
+
 from lib.workers.worker import Worker
 from lib.workers.mutant_bug_tester import MutantBugTester
 from lib.workers.usable_bug_tester import UsableBugTester
 from lib.workers.prerequisite_data_tester import PrerequisiteDataTester
 from lib.workers.mutant_generator_worker import MutantGeneratorWorker
+from lib.workers.mutation_testing_result_tester import MutationTestingResultTester
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,6 +22,7 @@ class WorkerFactory:
         "usable_bug_tester": UsableBugTester,
         "prerequisite_data_tester": PrerequisiteDataTester,
         "mutant_generator_worker": MutantGeneratorWorker,
+        "mutation_testing_result_tester": MutationTestingResultTester,
     }
     
     @classmethod
