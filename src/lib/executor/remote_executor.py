@@ -42,15 +42,27 @@ class RemoteExecutor(Executor):
             CONTEXT.FILE_MANAGER.copy_specific_directory(CONTEXT.dest_repo, dest_repo_in_core, machine=machine_name)
             LOGGER.debug(f"Subject repository copied to: {dest_repo_in_core}")
 
+    # Stage01: Mutant Bug Tester
     def test_for_mutant_bugs(self, CONTEXT: EngineContext, mutant_list: list):
         """Test for mutant bugs on remote machines"""
         raise NotImplementedError("RemoteExecutor does not implement test_for_mutant_bugs() method")
     
+    # Stage02: Usable Bug Tester
     def test_for_usable_bugs(self, CONTEXT: EngineContext, mutant_list: list):
         """Test for usable bugs on remote machines"""
         raise NotImplementedError("RemoteExecutor does not implement test_for_usable_bugs() method")
     
+    # Stage03: Prerequisite Data Tester
     def test_for_prerequisite_data(self, CONTEXT: EngineContext, mutant_list: list):
         """Test for prerequisite data on remote machines"""
         raise NotImplementedError("RemoteExecutor does not implement test_for_prerequisite_data() method")
 
+    # Stage04: Mutant Mutant Generator
+    def generate_mutants_from_mutants(self, CONTEXT: EngineContext, mutant_list: list):
+        """Generate mutants from existing mutants on remote machines"""
+        raise NotImplementedError("RemoteExecutor does not implement generate_mutants_from_mutants() method")
+
+    # stage05: Mutation Testing Result Tester
+    def test_for_mutation_testing_results(self, CONTEXT: EngineContext, mutant_list: list):
+        """Test for mutation testing results on remote machines"""
+        raise NotImplementedError("RemoteExecutor does not implement test_for_mutation_testing_results() method")

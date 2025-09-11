@@ -6,6 +6,7 @@ from lib.workers.worker import Worker
 from lib.workers.mutant_bug_tester import MutantBugTester
 from lib.workers.usable_bug_tester import UsableBugTester
 from lib.workers.prerequisite_data_tester import PrerequisiteDataTester
+from lib.workers.mutant_generator_worker import MutantGeneratorWorker
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,9 +19,7 @@ class WorkerFactory:
         "mutant_bug_tester": MutantBugTester,
         "usable_bug_tester": UsableBugTester,
         "prerequisite_data_tester": PrerequisiteDataTester,
-        # Add more workers here as you implement them
-        # "code_reviewer": CodeReviewer,
-        # "test_runner": TestRunner,
+        "mutant_generator_worker": MutantGeneratorWorker,
     }
     
     @classmethod

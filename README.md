@@ -1,7 +1,7 @@
 # cpp_dlfl_feature_extractor
 
 
-## Build MUSICUP
+### Build MUSICUP
 ```
 $ cd ./tools/MUSICUP/
 $ make LLVM_BUILD_PATH=/usr/lib/llvm-13 -j20
@@ -32,4 +32,14 @@ time python3 main.py --experiment-label attempt_1 --subject zlib_ng --engine-typ
 ### Stage03: Prerequisite Data Extractor
 ```
 time python3 main.py --experiment-label attempt_1 --subject zlib_ng --engine-type prerequisite_data_extractor -d
+```
+
+### Stage04: Mutant Mutant Generator
+```
+time python3 main.py --experiment-label attempt_1 --subject zlib_ng --engine-type mutant_mutant_generator -d
+```
+
+### Stage05: Mutation Testing Result Extractor
+```
+time python3 main.py --experiment-label attempt_1 --subject zlib_ng --engine-type mutation_testing_result_extractor -d
 ```

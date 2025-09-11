@@ -67,6 +67,7 @@ class Worker(ABC):
             testcases_dir=self.testcases_dir,
             coverage_dir=self.coverage_dir,
             line2function_dir=self.line2function_dir,
+            mutant_mutants_dir=self.mutant_mutants_dir,
             musicup_exec=self.musicup_exec,
             extractor_exec=self.extractor_exec
         )
@@ -138,6 +139,12 @@ class Worker(ABC):
         if not os.path.exists(self.line2function_dir):
             os.makedirs(self.line2function_dir)
         LOGGER.debug(f"Line2Function output directory: {self.line2function_dir}")
+
+        # mutant mutant out dir
+        self.mutant_mutants_dir = os.path.join(self.out_dir, "mutant_mutants")
+        if not os.path.exists(self.mutant_mutants_dir):
+            os.makedirs(self.mutant_mutants_dir)
+        LOGGER.debug(f"MutantMutant output directory: {self.mutant_mutants_dir}")
 
     def update_status_column_in_db(self, bug_idx: int, col_key: str):
         self.DB.update(

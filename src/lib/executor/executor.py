@@ -30,3 +30,13 @@ class Executor(ABC):
     def test_for_prerequisite_data(self, CONTEXT: EngineContext, mutant_list: list):
         """Test for prerequisite data"""
         raise NotImplementedError("Subclasses must implement test_for_prerequisite_data() method")
+
+    @abstractmethod
+    def generate_mutants_from_mutants(self, CONTEXT: EngineContext, mutant_list: list):
+        """Generate mutants from existing mutants"""
+        raise NotImplementedError("Subclasses must implement generate_mutants_from_mutants() method")
+
+    @abstractmethod
+    def test_for_mutation_testing_results(self, CONTEXT: EngineContext, mutant_list: list):
+        """Test for mutation testing results"""
+        raise NotImplementedError("Subclasses must implement test_for_mutation_testing_results() method")

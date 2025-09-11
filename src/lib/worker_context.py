@@ -18,6 +18,7 @@ class WorkerContext:
     testcases_dir: str
     coverage_dir: str
     line2function_dir: str
+    mutant_mutants_dir: str
     
     # Executables
     musicup_exec: str

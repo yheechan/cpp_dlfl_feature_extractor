@@ -184,9 +184,9 @@ class MutantBugGenerator(Engine):
                     "initial BOOLEAN DEFAULT NULL",
                     "usable BOOLEAN DEFAULT NULL",
                     "prerequisites BOOLEAN DEFAULT NULL",
-                    "sbfl BOOLEAN DEFAULT NULL",
-                    "mlfl BOOLEAN DEFAULT NULL",
                     "selected_for_mbfl BOOLEAN DEFAULT NULL",
+                    "mutant_generated BOOLEAN DEFAULT NULL",
+                    "mbfl BOOLEAN DEFAULT NULL",
                     "mbfl_cpu_time FLOAT",
 
                     "buggy_file TEXT DEFAULT NULL",

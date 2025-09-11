@@ -7,6 +7,7 @@ from lib.engines.engine import Engine
 from lib.engines.mutant_bug_generator import MutantBugGenerator
 from lib.engines.usable_bug_selector import UsableBugSelector
 from lib.engines.prerequisite_data_extractor import PrerequisiteDataExtractor
+from lib.engines.mutant_mutant_generator import MutantMutantGenerator
 
 LOGGER = logging.getLogger(__name__)
 
@@ -19,9 +20,7 @@ class EngineFactory:
         "mutant_bug_generator": MutantBugGenerator,
         "usable_bug_selector": UsableBugSelector,
         "prerequisite_data_extractor": PrerequisiteDataExtractor,
-        # Add more engines here as you implement them
-        # "feature_extractor": FeatureExtractor,
-        # "code_analyzer": CodeAnalyzer,
+        "mutant_mutant_generator": MutantMutantGenerator,
     }
     
     @classmethod

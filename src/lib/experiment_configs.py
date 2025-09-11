@@ -10,6 +10,10 @@ class ExperimentConfigs:
         "usable_bug_tester": "stage02",
         "prerequisite_data_extractor": "stage03",
         "prerequisite_data_tester": "stage03",
+        "mutant_mutant_generator": "stage04",
+        "mutant_generator_worker": "stage04",
+        "mutation_testing_result_extractor": "stage05",
+        "mutation_testing_result_tester": "stage05",
     }
     # def __init__(self, args: argparse.Namespace):
     def __init__(self):
