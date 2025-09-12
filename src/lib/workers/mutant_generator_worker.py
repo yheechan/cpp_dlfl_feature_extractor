@@ -63,22 +63,7 @@ class MutantGeneratorWorker(Worker):
             LOGGER.error(f"Failed to apply patch {MUTANT.patch_file} to {MUTANT.target_file}, skipping mutant")
             return
         
-        # TODO: THIS MIGHT BE NOT NECESSARY
-        # # 3. Clean the build
-        # res = execute_bash_script(self.SUBJECT.clean_script, self.subject_repo)
-        # if res != 0:
-        #     LOGGER.error(f"Failed to clean the build, skipping mutant")
-        #     MUTANT.apply_patch(revert=True)
-        #     return
-
-        # # 4. Configure with no coverage option
-        # res = execute_bash_script(self.SUBJECT.configure_no_cov_script, self.subject_repo)
-        # if res != 0:
-        #     LOGGER.error(f"Failed to configure subject with no coverage option, skipping mutant")
-        #     MUTANT.apply_patch(revert=True)
-        #     return
-
-        # 6. Build the subject, if build fails, skip the mutant
+        # 3. Build the subject, if build fails, skip the mutant
         res = execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
         if res != 0:
             LOGGER.error(f"Build failed after applying patch {MUTANT.patch_file}, skipping mutant")
@@ -86,10 +71,10 @@ class MutantGeneratorWorker(Worker):
             return
         self.SUBJECT.set_environmental_variables(self.core_dir)
 
-        # 7. Organize targetFile2fileInfo dictionary
+        # 4. Organize targetFile2fileInfo dictionary
         targetFile2fileInfo = self._organize_targetFile2fileInfo(MUTANT)
         
-        # 8. Generate mutant mutants
+        # 5. Generate mutant mutants
         target_file_mutant_dirs = [dir for dir in os.listdir(self.version_mutant_mutants_dir)]
         if len(target_file_mutant_dirs) == 0:
             LOGGER.debug("No target file mutant directories found, skipping mutant generation")
@@ -100,17 +85,17 @@ class MutantGeneratorWorker(Worker):
         else:
             LOGGER.debug(f"Found target file mutant directories: {target_file_mutant_dirs}")
 
-        # 7. Get generated mutants
+        # 6. Get generated mutants
         generated_mutants = self._get_generated_mutants(targetFile2fileInfo)
         LOGGER.debug(f"Generated {len(generated_mutants)} mutants for mutant {MUTANT.mutant_file}")
 
-        # 8. Get mutation info record from music csv-DB
+        # 7. Get mutation info record from music csv-DB
         mutation_info_record = self._get_mutation_info_record(targetFile2fileInfo, MUTANT=MUTANT)
 
-        # 9, Insert generated mutants into DB
+        # 8, Insert generated mutants into DB
         self._insert_generated_mutants_into_db(generated_mutants, mutation_info_record, MUTANT)
 
-        # 10. Update bug_idx mutants_generated status in DB
+        # 9. Update bug_idx mutants_generated status in DB
         self.update_status_column_in_db(MUTANT.bug_idx, "mutants_generated")
 
     def _make_required_directories_for_mutant_mutants(self, MUTANT: Mutant):
