@@ -123,6 +123,42 @@ class Mutant:
         LOGGER.debug(f"passing test cases: {len(self.tc_info['pass'])}")
         LOGGER.debug(f"crashed test cases: {len(self.tc_info['crashed'])}")
         LOGGER.debug(f"cctc test cases: {len(self.tc_info['cctc'])}")
+    
+    def set_relevant_tc_info_from_db(self, DB: CRUD):
+        tc_info = DB.read(
+            "cpp_tc_info",
+            columns="tc_name, tc_result, tc_idx, relevant_tcs",
+            conditions={"bug_idx": self.bug_idx}
+        )
+        self.tc_info_with_relevant_status = {"fail": [], "pass": [], "crashed": [], "cctc": []}
+        for tc_name, tc_result, tc_idx, relevant_tcs in tc_info:
+            if tc_result == "fail":
+                self.tc_info_with_relevant_status["fail"].append((tc_idx, tc_name, relevant_tcs))
+            elif tc_result == "pass":
+                self.tc_info_with_relevant_status["pass"].append((tc_idx, tc_name, relevant_tcs))
+            elif tc_result == "crashed":
+                self.tc_info_with_relevant_status["crashed"].append((tc_idx, tc_name, relevant_tcs))
+            elif tc_result == "cctc":
+                self.tc_info_with_relevant_status["cctc"].append((tc_idx, tc_name, relevant_tcs))
+
+        LOGGER.debug(f"failing test cases: {len(self.tc_info_with_relevant_status['fail'])}")
+        LOGGER.debug(f"passing test cases: {len(self.tc_info_with_relevant_status['pass'])}")
+        LOGGER.debug(f"crashed test cases: {len(self.tc_info_with_relevant_status['crashed'])}")
+        LOGGER.debug(f"cctc test cases: {len(self.tc_info_with_relevant_status['cctc'])}")
+    
+    def set_relevant_tc_info_as_sorted_list_from_db(self, DB: CRUD) -> list:
+        tc_info = DB.read(
+            "cpp_tc_info",
+            columns="tc_name, tc_result, tc_idx, relevant_tcs",
+            conditions={"bug_idx": self.bug_idx}
+        )
+        tc_list = []
+        for tc_name, tc_result, tc_idx, relevant_tcs in tc_info:
+            tc_list.append((tc_idx, tc_name, tc_result, relevant_tcs))
+        LOGGER.debug(f"relevant test cases: {len(tc_list)}")
+        tc_list.sort(key=lambda x: x[0])
+        self.tc_list = tc_list
+
 
     def set_line_info_from_db(self, DB: CRUD):
         line_info = DB.read(
@@ -527,14 +563,12 @@ class Mutant:
         for tc_result_type in ["fail", "pass", "cctc", "crashed"]:
             for tc_idx, tc_name in self.tc_info[tc_result_type]:
                 relevant_status = True
-                if tc_idx in notRelevantTCs or tc_result_type == "crashed":
+                if tc_idx in notRelevantTCs or tc_result_type == "crashed" or tc_result_type == "cctc":
                     relevant_status = False
 
                 DB.update(
                     "cpp_tc_info",
-                    set_values={
-                        "relevant_tcs": relevant_status
-                    },
+                    set_values={"relevant_tcs": relevant_status},
                     conditions={
                         "bug_idx": self.bug_idx,
                         "tc_idx": tc_idx,
@@ -662,7 +696,6 @@ class Mutant:
             'num_lines_executed_by_ccts': numLinesExecutedByCCTCs,
             "num_total_lines_executed": numTotalLinesExecuted,
             "num_total_lines": numTotalLines,
-            "prerequisites": True
         }
 
         LOGGER.debug(json.dumps(coverage_summary, indent=4))
@@ -712,13 +745,14 @@ class Mutant:
             stack_trace = "".join(bt_list)
 
             # 4. save stack trace to DB
-            DB.update(
-                "cpp_tc_info",
-                set_values={"stacktrace": stack_trace},
-                conditions={
-                    "bug_idx": self.bug_idx,
-                    "tc_idx": tc_idx,
-                    "tc_name": tc_name
-                }
-            )
+            if stack_trace != "":
+                DB.update(
+                    "cpp_tc_info",
+                    set_values={"stacktrace": stack_trace},
+                    conditions={
+                        "bug_idx": self.bug_idx,
+                        "tc_idx": tc_idx,
+                        "tc_name": tc_name
+                    }
+                )
 

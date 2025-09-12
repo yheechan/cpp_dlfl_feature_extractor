@@ -29,7 +29,14 @@ class MutantMutantGenerator(Engine):
             LOGGER.debug(f"Randomly selected {len(mutant_list)} mutants for mutant mutant generation")
         else:
             LOGGER.debug(f"Total mutants to process: {len(mutant_list)}")
-
+        
+        # Update selected_for_mbfl to True for the selected mutants
+        for _, _, _, bug_idx in mutant_list:
+            self.DB.update(
+                "cpp_bug_info",
+                set_values={"selected_for_mbfl": True},
+                conditions={"bug_idx": bug_idx}
+            )
 
         self._start_generating_mutants(mutant_list)
     

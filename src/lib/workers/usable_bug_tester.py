@@ -26,9 +26,9 @@ class UsableBugTester(Worker):
             LOGGER.info("Configuring subject")
             execute_bash_script(self.SUBJECT.configure_yes_cov_script, self.subject_repo)
         
-        # 2. Build subject
-        LOGGER.info("Building subject")
-        execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
+            # 2. Build subject
+            LOGGER.info("Building subject")
+            execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
         self.SUBJECT.set_environmental_variables(self.core_dir)
 
         # 3. Test mutant
@@ -95,6 +95,7 @@ class UsableBugTester(Worker):
                 return
             LOGGER.debug(f"Buggy line {MUTANT.buggy_lineno} is COVERED by failing test case {tc_name}")
 
+        # Update usable status in DB
         self.update_status_column_in_db(MUTANT.bug_idx, "usable")
 
         # 5. Revert the patch

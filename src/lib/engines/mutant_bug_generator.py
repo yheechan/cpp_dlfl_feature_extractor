@@ -236,9 +236,9 @@ class MutantBugGenerator(Engine):
                     "full_bit_sequence_length INT",
                     "full_line_coverage_bit_sequence TEXT",
 
-                    "exception_type TEXT",
-                    "exception_msg TEXT",
-                    "stacktrace TEXT",
+                    "exception_type TEXT DEFAULT NULL",
+                    "exception_msg TEXT DEFAULT NULL",
+                    "stacktrace TEXT DEFAULT NULL",
 
                     "relevant_tcs BOOLEAN DEFAULT NULL",
 

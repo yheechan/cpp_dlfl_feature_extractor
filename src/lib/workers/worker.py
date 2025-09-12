@@ -127,7 +127,7 @@ class Worker(ABC):
 
         self.patch_dir = os.path.join(self.core_dir, "patches")
         if not os.path.exists(self.patch_dir):
-            os.makedirs(self.patch_dir)
+            os.makedirs(self.patch_dir, exist_ok=True)
         LOGGER.debug(f"Patch directory: {self.patch_dir}")
 
         # coverage directory
@@ -137,13 +137,13 @@ class Worker(ABC):
         # line2function out dir
         self.line2function_dir = os.path.join(self.out_dir, "line2function")
         if not os.path.exists(self.line2function_dir):
-            os.makedirs(self.line2function_dir)
+            os.makedirs(self.line2function_dir, exist_ok=True)
         LOGGER.debug(f"Line2Function output directory: {self.line2function_dir}")
 
         # mutant mutant out dir
         self.mutant_mutants_dir = os.path.join(self.out_dir, "mutant_mutants")
         if not os.path.exists(self.mutant_mutants_dir):
-            os.makedirs(self.mutant_mutants_dir)
+            os.makedirs(self.mutant_mutants_dir, exist_ok=True)
         LOGGER.debug(f"MutantMutant output directory: {self.mutant_mutants_dir}")
 
     def update_status_column_in_db(self, bug_idx: int, col_key: str):

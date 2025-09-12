@@ -37,11 +37,11 @@ class MutantGeneratorWorker(Worker):
         # 1. Configure subject
         if self.CONFIG.ARGS.needs_configuration:
             LOGGER.info("Configuring subject")
-            execute_bash_script(self.SUBJECT.configure_yes_cov_script, self.subject_repo)
+            execute_bash_script(self.SUBJECT.configure_no_cov_script, self.subject_repo)
         
-        # 2. Build subject
-        LOGGER.info("Building subject")
-        execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
+            # 2. Build subject
+            LOGGER.info("Building subject")
+            execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
 
         # 3. Generate mutant mutants
         LOGGER.info("Generating mutant mutants")
@@ -63,19 +63,20 @@ class MutantGeneratorWorker(Worker):
             LOGGER.error(f"Failed to apply patch {MUTANT.patch_file} to {MUTANT.target_file}, skipping mutant")
             return
         
-        # 3. Clean the build
-        res = execute_bash_script(self.SUBJECT.clean_script, self.subject_repo)
-        if res != 0:
-            LOGGER.error(f"Failed to clean the build, skipping mutant")
-            MUTANT.apply_patch(revert=True)
-            return
+        # TODO: THIS MIGHT BE NOT NECESSARY
+        # # 3. Clean the build
+        # res = execute_bash_script(self.SUBJECT.clean_script, self.subject_repo)
+        # if res != 0:
+        #     LOGGER.error(f"Failed to clean the build, skipping mutant")
+        #     MUTANT.apply_patch(revert=True)
+        #     return
 
-        # 4. Configure with no coverage option
-        res = execute_bash_script(self.SUBJECT.configure_no_cov_script, self.subject_repo)
-        if res != 0:
-            LOGGER.error(f"Failed to configure subject with no coverage option, skipping mutant")
-            MUTANT.apply_patch(revert=True)
-            return
+        # # 4. Configure with no coverage option
+        # res = execute_bash_script(self.SUBJECT.configure_no_cov_script, self.subject_repo)
+        # if res != 0:
+        #     LOGGER.error(f"Failed to configure subject with no coverage option, skipping mutant")
+        #     MUTANT.apply_patch(revert=True)
+        #     return
 
         # 6. Build the subject, if build fails, skip the mutant
         res = execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
@@ -108,6 +109,9 @@ class MutantGeneratorWorker(Worker):
 
         # 9, Insert generated mutants into DB
         self._insert_generated_mutants_into_db(generated_mutants, mutation_info_record, MUTANT)
+
+        # 10. Update bug_idx mutants_generated status in DB
+        self.update_status_column_in_db(MUTANT.bug_idx, "mutants_generated")
 
     def _make_required_directories_for_mutant_mutants(self, MUTANT: Mutant):
         target_files = []
@@ -235,8 +239,6 @@ class MutantGeneratorWorker(Worker):
                 values
             )
             LOGGER.debug(f"Inserted mutant {mutant_filename} into DB for bug_idx {MUTANT.bug_idx}")
-        self.update_status_column_in_db(MUTANT.bug_idx, "selected_for_mbfl")
-        self.update_status_column_in_db(MUTANT.bug_idx, "mutants_generated")
 
 
     def stop(self):

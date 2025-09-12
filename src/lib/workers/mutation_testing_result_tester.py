@@ -17,6 +17,15 @@ class MutationTestingResultTester(Worker):
         """Execute the mutation testing result tester"""
         LOGGER.info("Executing MutationTestingResultTester")
 
+        # 1. Configure subject
+        if self.CONFIG.ARGS.needs_configuration:
+            LOGGER.info("Configuring subject")
+            execute_bash_script(self.SUBJECT.configure_no_cov_script, self.subject_repo)
+
+            # 2. Build subject
+            LOGGER.info("Building subject")
+            execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
+        
         self._test_mutant()
     
     def _test_mutant(self):

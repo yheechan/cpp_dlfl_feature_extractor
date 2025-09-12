@@ -40,9 +40,9 @@ class MutantBugTester(Worker):
             LOGGER.info("Configuring subject")
             execute_bash_script(self.SUBJECT.configure_no_cov_script, self.subject_repo)
         
-        # 2. Build subject
-        LOGGER.info("Building subject")
-        execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
+            # 2. Build subject
+            LOGGER.info("Building subject")
+            execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
         self.SUBJECT.set_environmental_variables(self.core_dir)
 
         # 3. Test mutant

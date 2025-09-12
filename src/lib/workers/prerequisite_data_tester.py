@@ -26,9 +26,9 @@ class PrerequisiteDataTester(Worker):
             LOGGER.info("Configuring subject")
             execute_bash_script(self.SUBJECT.configure_yes_cov_script, self.subject_repo)
         
-        # 2. Build subject
-        LOGGER.info("Building subject")
-        execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
+            # 2. Build subject
+            LOGGER.info("Building subject")
+            execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
         self.SUBJECT.set_environmental_variables(self.core_dir)
 
         # 3. Test mutant
@@ -81,8 +81,31 @@ class PrerequisiteDataTester(Worker):
         # 6. postprocess coverage info
         MUTANT.postprocess_coverage_info(self.CONTEXT, self.DB)
 
+        # IF THERE IS NO RELEVANT PASSING TEST WE CAN'T USE THIS VERSION ANYMORE
+        MUTANT.set_relevant_tc_info_from_db(self.DB)
+        relevant_tc_cnt = {"fail": 0, "pass": 0}
+        for tc_type in ["fail", "pass"]:
+            for _, _, relevant_tc in MUTANT.tc_info_with_relevant_status[tc_type]:
+                if relevant_tc == True:
+                    relevant_tc_cnt[tc_type] += 1
+
+        if relevant_tc_cnt["pass"] == 0:
+            LOGGER.warning(f"Can't use this bug due to no relevant passing test case for mutant {MUTANT.mutant_file}")
+            self.DB.update(
+                "cpp_bug_info",
+                set_values={
+                    "mutant_type": "no_relevant_passing_tcs",
+                    "prerequisites": False
+                },
+                conditions={"bug_idx": MUTANT.bug_idx}
+            )
+            return
+
         # 7. Extract stack trace for failing tests
         MUTANT.extract_stack_trace_for_failing_tests(self.CONTEXT, self.DB)
+
+        # 8. Update bug_idx prerequisites status in DB
+        self.update_status_column_in_db(MUTANT.bug_idx, "prerequisites")
 
     def stop(self):
         """Stop the Prerequisite Data Testing process"""
