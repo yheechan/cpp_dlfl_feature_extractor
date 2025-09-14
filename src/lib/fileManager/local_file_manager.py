@@ -28,3 +28,11 @@ class LocalFileManager(FileManager):
     def remove_specific_file(self, file_path: str, machine: str = None):
         remove_file(file_path)
         LOGGER.debug(f"Local file removed at: {file_path}")
+    
+    def zip_specific_directory(self, src: str, zip_path: str, machine: str = None):
+        zip_directory(src, zip_path)
+        LOGGER.debug(f"Local directory zipped from {src} to {zip_path}.zip")
+
+    def unzip_specific_directory(self, zip_path: str, extract_to: str, machine: str = None):
+        unzip_directory(zip_path, extract_to)
+        LOGGER.debug(f"Local zip file {zip_path} extracted to {extract_to}")

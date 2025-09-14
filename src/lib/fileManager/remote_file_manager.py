@@ -49,3 +49,20 @@ class RemoteFileManager(FileManager):
         ]
         execute_command_as_list(cmd)
         LOGGER.debug(f"Remote file removed at: {file_path}")
+
+    def zip_specific_directory(self, src: str, zip_path: str, machine: str = None):
+        cmd = [
+            "ssh", machine,
+            "zip", "-r", f"{zip_path}.zip", src,
+            "&&", "rm", "-rf", src
+        ]
+        execute_command_as_list(cmd)
+        LOGGER.debug(f"Remote directory zipped from {src} to {zip_path}.zip")
+
+    def unzip_specific_directory(self, zip_path: str, extract_to: str, machine: str = None):
+        cmd = [
+            "ssh", machine,
+            "unzip", "-o", f"{zip_path}.zip", "-d", extract_to
+        ]
+        execute_command_as_list(cmd)
+        LOGGER.debug(f"Remote zip file {zip_path} extracted to {extract_to}")

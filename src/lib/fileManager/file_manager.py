@@ -19,6 +19,12 @@ class FileManager(ABC):
     
     def remove_file(self, file_path: str):
         remove_file(file_path)
+    
+    def zip_directory(self, src: str, zip_path: str):
+        zip_directory(src, zip_path)
+
+    def unzip_directory(self, zip_path: str, extract_to: str):
+        unzip_directory(zip_path, extract_to)
 
     @abstractmethod
     def make_specific_directory(self, dir_path: str, machine: str = None):
@@ -44,3 +50,13 @@ class FileManager(ABC):
     def remove_specific_file(self, file_path: str, machine: str = None):
         """Abstract method to be implemented by subclasses for removing files in a specific way"""
         raise NotImplementedError("Subclasses must implement remove_specific_file() method")
+    
+    @abstractmethod
+    def zip_specific_directory(self, src: str, zip_path: str, machine: str = None):
+        """Abstract method to be implemented by subclasses for zipping directories in a specific way"""
+        raise NotImplementedError("Subclasses must implement zip_specific_directory() method")
+    
+    @abstractmethod
+    def unzip_specific_directory(self, zip_path: str, extract_to: str, machine: str = None):
+        """Abstract method to be implemented by subclasses for unzipping directories in a specific way"""
+        raise NotImplementedError("Subclasses must implement unzip_specific_directory() method")
