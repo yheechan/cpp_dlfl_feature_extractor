@@ -160,11 +160,6 @@ class MutantBugGenerator(Engine):
     def _start_testing_for_mutant_bugs(self, mutant_list: list):
         self.EXECUTOR.test_for_mutant_bugs(self.CONTEXT, mutant_list)
 
-    def cleanup(self):
-        """Clean up resources used by the mutant bug generator"""
-        LOGGER.info("Cleaning up MutantBugGenerator resources")
-        super().cleanup()
-
     # Initialize required tables in the database
     def _initialize_required_tables(self):
         def _init_cpp_bug_info_table():
@@ -356,3 +351,8 @@ class MutantBugGenerator(Engine):
                         "post_mut": post_mut
                     }
         return mutation_info_record
+
+    def cleanup(self):
+        """Clean up resources used by the mutant bug generator"""
+        LOGGER.info("Cleaning up MutantBugGenerator resources")
+        super().cleanup()
