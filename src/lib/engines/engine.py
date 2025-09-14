@@ -87,6 +87,11 @@ class Engine(ABC):
             self.CONFIG.ARGS.subject
         )
         LOGGER.debug(f"Subject log directory: {self.log_dir}")  
+        self.config_dir = os.path.join(
+            self.CONFIG.ENV["ROOT_DIR"],
+            "configs",
+        )
+        LOGGER.debug(f"Config directory: {self.config_dir}")
         self.out_dir = os.path.join(
             self.CONFIG.ENV["RESEARCH_DATA"],
             self.CONFIG.ARGS.experiment_label,

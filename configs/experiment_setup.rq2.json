@@ -1,0 +1,7 @@
+{
+    "num_repeats": 10,
+    "line_selection_formula": "ochiai",
+    "target_lines": [100],
+    "mutation_cnt": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "tcs_reduction": "All"
+}

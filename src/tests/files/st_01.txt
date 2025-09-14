@@ -1,0 +1,13 @@
+#0  adler32_fold_copy_impl (adler=<optimized out>, dst=dst@entry=0x0, src=0x7fffffffce90 "The quick brown fox jumped over the lazy dog\377\177", len=44, COPY=COPY@entry=0) at /ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core4/zlib_ng/arch/x86/adler32_avx2.c:57
+#1  0x00005555555d2bb0 in adler32_avx2 (adler=<optimized out>, src=<optimized out>, len=<optimized out>) at /ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core4/zlib_ng/arch/x86/adler32_avx2.c:138
+#2  0x00005555555c3e8d in inf_chksum (len=<optimized out>, src=<optimized out>, strm=0x7fffffffce00) at /ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core4/zlib_ng/inflate.c:47
+#3  zng_inflate (strm=<optimized out>, flush=0) at /ssd_home/yangheechan/cpp_research_working_dir/attempt_1/zlib_ng/working_env/gaster23.swtv/core4/zlib_ng/inflate.c:1110
+#4  0x0000555555594487 in inflate_adler32_Test::TestBody() ()
+#5  0x00005555556097ef in void testing::internal::HandleExceptionsInMethodIfSupported<testing::Test, void>(testing::Test*, void (testing::Test::*)(), char const*) ()
+#6  0x00005555555fd626 in testing::Test::Run() ()
+#7  0x00005555555fd7a5 in testing::TestInfo::Run() ()
+#8  0x00005555555fdd59 in testing::TestSuite::Run() ()
+#9  0x00005555555fe45f in testing::internal::UnitTestImpl::RunAllTests() ()
+#10 0x0000555555609db7 in bool testing::internal::HandleExceptionsInMethodIfSupported<testing::internal::UnitTestImpl, bool>(testing::internal::UnitTestImpl*, bool (testing::internal::UnitTestImpl::*)(), char const*) ()
+#11 0x00005555555fd86c in testing::UnitTest::Run() ()
+#12 0x000055555557ab80 in main ()
