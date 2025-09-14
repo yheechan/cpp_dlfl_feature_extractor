@@ -14,8 +14,9 @@ class ExperimentConfigs:
         "mutant_generator_worker": "stage04",
         "mutation_testing_result_extractor": "stage05",
         "mutation_testing_result_tester": "stage05",
+        "dataset_constructor": "stage06",
+        "dataset_constructor_tester": "stage06",
     }
-    # def __init__(self, args: argparse.Namespace):
     def __init__(self):
         self.ENV = None
         self.STAGE = None

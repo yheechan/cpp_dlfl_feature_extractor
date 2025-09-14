@@ -10,6 +10,8 @@ from lib.engines.prerequisite_data_extractor import PrerequisiteDataExtractor
 from lib.engines.mutant_mutant_generator import MutantMutantGenerator
 from lib.engines.mutation_testing_result_extractor import MutationTestingResultExtractor
 
+from lib.engines.dataset_constructor import DatasetConstructor
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -23,6 +25,7 @@ class EngineFactory:
         "prerequisite_data_extractor": PrerequisiteDataExtractor,
         "mutant_mutant_generator": MutantMutantGenerator,
         "mutation_testing_result_extractor": MutationTestingResultExtractor,
+        "dataset_constructor": DatasetConstructor,
     }
     
     @classmethod
