@@ -101,6 +101,26 @@ class Mutant:
         
         self.buggy_lineno = str(bug_info[0][3])
         LOGGER.debug(f"Mutant {self.mutant_name} has bug_idx {self.bug_idx}")
+    
+    def set_bug_idx_with_specific_mutant_name_from_db(self, DB: CRUD, mutant_name: str):
+        bug_info = DB.read(
+            "cpp_bug_info",
+            columns="bug_idx, target_code_file, buggy_code_file, pre_start_line",
+            conditions={
+                "subject": self.subject,
+                "experiment_label": self.experiment_label,
+                "version": mutant_name,
+            }
+        )
+        if len(bug_info) == 0:
+            LOGGER.error(f"No bug info found in DB for mutant {mutant_name}")
+            raise ValueError(f"No bug info found in DB for mutant {mutant_name}")
+        self.bug_idx = bug_info[0][0]
+        self.target_code_file = bug_info[0][1]
+        self.buggy_code_filename = bug_info[0][2]
+        
+        self.buggy_lineno = str(bug_info[0][3])
+        LOGGER.debug(f"Mutant {mutant_name} has bug_idx {self.bug_idx}")
 
     def set_tc_info_from_db(self, DB: CRUD):
         tc_info = DB.read(

@@ -354,11 +354,11 @@ class LocalExecutor(Executor):
                     if task is None:
                         break
                     
-                    target_file, mutant, bug_idx, mutant_idx = task
+                    target_file, mutant, testing_mutant, bug_idx, mutant_idx = task
                     LOGGER.info(f"Worker {machine_name}::core{core_idx} processing mutant {mutant} for file {target_file}")
 
                     # Copy mutant file to assigned works directory
-                    CONTEXT.FILE_MANAGER.copy_specific_file(mutant, assigned_works_dir)
+                    CONTEXT.FILE_MANAGER.copy_specific_file(testing_mutant, assigned_works_dir)
 
                     # TODO: Do not forget that target_file here is from cpp_mutation_info table
                     cmd = [
@@ -369,7 +369,8 @@ class LocalExecutor(Executor):
                         "--machine", machine_name,
                         "--core-idx", str(core_idx),
                         "--target-file", target_file,
-                        "--mutant", mutant.name,
+                        "--mutant", testing_mutant.name,
+                        "--base-bug", mutant.name,
                         "--bug-id", str(bug_idx),
                         "--mutant-id", str(mutant_idx)
                     ]
@@ -399,7 +400,7 @@ class LocalExecutor(Executor):
         core_cnt = len(CONTEXT.CONFIG.MACHINE_CORE_LIST)
         task_queue = queue.Queue()
         for i, mutant in enumerate(mutant_list):
-            task_queue.put((mutant[0], mutant[1], mutant[2], mutant[3]))
+            task_queue.put((mutant[0], mutant[1], mutant[2], mutant[3], mutant[4]))
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=core_cnt) as executor:
             futures = [

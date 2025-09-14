@@ -103,6 +103,11 @@ class ExperimentConfigs:
 
         # Only required for Stage05 worker: mutation_testing_result_extractor
         self.PARSER.add_argument(
+            "-vv", "--base-bug",
+            type=str,
+            help="Specify the base bug mutant name for mutation testing result extraction"
+        )
+        self.PARSER.add_argument(
             "-bid", "--bug-id",
             type=int,
             help="Specify the bug ID for mutation testing result extraction"

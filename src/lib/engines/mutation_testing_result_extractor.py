@@ -20,14 +20,19 @@ class MutationTestingResultExtractor(Engine):
         LOGGER.info("Running Mutation Testing Result Extractor")
 
         # Get target mutants to generate mutants from
-        mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE")
+        mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL")
         LOGGER.debug(f"Total mutants to process: {len(mutant_list)}")
 
         mutant_mutants_list = self._get_mutant_mutants_from_db(mutant_list)
         # TODO:TEMPORARILY REDUCE SET FOR TEST
-        mutant_mutants_list = mutant_mutants_list[:8]
+        # only leave mutant where src_bug_idx == 153
+        # mutant_mutants_list = [item for item in mutant_mutants_list if item[3] == 153]
+        # LOGGER.debug(f"Filtered mutant mutants to process: {len(mutant_mutants_list)}")
 
         self._start_extracting_mutation_testing_results(mutant_mutants_list)
+
+        # zip subject_mutant_mutants_dir
+        self.FILE_MANAGER.zip_directory(self.mutant_mutants_dir, self.mutant_mutants_dir)
     
 
     def _get_mutant_mutants_from_db(self, mutant_list: list) -> list:
@@ -48,6 +53,7 @@ class MutationTestingResultExtractor(Engine):
 
                 mutant_mutants_list.append((
                     baseline_target_file,
+                    src_mutant_path,
                     tgt_mutant_path,
                     src_bug_idx,
                     tgt_mutant_idx
