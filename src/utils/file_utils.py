@@ -48,3 +48,23 @@ def remove_file(path: str):
         return True
     LOGGER.info(f"No need to remove file, it does not exist: {path}")
     return False
+
+def zip_directory(src: str, zip_path: str):
+    """Zip a directory."""
+    if os.path.exists(src):
+        shutil.make_archive(zip_path, 'zip', src)
+        LOGGER.info(f"Zipped directory {src} to {zip_path}.zip")
+        # Delete the original directory after zipping
+        remove_directory(src)
+        return True
+    LOGGER.warning(f"Source directory does not exist for zipping: {src}")
+    return False
+
+def unzip_directory(zip_path: str, extract_to: str):
+    """Unzip a directory."""
+    if os.path.exists(f"{zip_path}.zip"):
+        shutil.unpack_archive(f"{zip_path}.zip", extract_to)
+        LOGGER.info(f"Unzipped {zip_path}.zip to {extract_to}")
+        return True
+    LOGGER.warning(f"Zip file does not exist for unzipping: {zip_path}.zip")
+    return False
