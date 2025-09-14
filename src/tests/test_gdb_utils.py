@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 import os
 
 from utils.gdb_utils import *
