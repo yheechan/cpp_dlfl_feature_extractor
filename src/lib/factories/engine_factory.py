@@ -11,6 +11,7 @@ from lib.engines.mutant_mutant_generator import MutantMutantGenerator
 from lib.engines.mutation_testing_result_extractor import MutationTestingResultExtractor
 
 from lib.engines.dataset_constructor import DatasetConstructor
+from lib.engines.dataset_postprocessor import DatasetPostprocessor
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class EngineFactory:
         "mutant_mutant_generator": MutantMutantGenerator,
         "mutation_testing_result_extractor": MutationTestingResultExtractor,
         "dataset_constructor": DatasetConstructor,
+        "dataset_postprocessor": DatasetPostprocessor,
     }
     
     @classmethod

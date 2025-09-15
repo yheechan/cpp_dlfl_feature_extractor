@@ -15,7 +15,7 @@ class ExperimentConfigs:
         "mutation_testing_result_extractor": "stage05",
         "mutation_testing_result_tester": "stage05",
         "dataset_constructor": "stage06",
-        "dataset_constructor_tester": "stage06",
+        "dataset_postprocessor": "stage07",
     }
     def __init__(self):
         self.ENV = None
@@ -54,11 +54,9 @@ class ExperimentConfigs:
             help="Indicate if the execution is remote"
         )
 
-        # Required Information (e.g., subject)
         self.PARSER.add_argument(
             "-s", "--subject",
             type=str,
-            required=True,
             help="Specify the subject for the experiment"
         )
 

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import os
 import logging
 from pathlib import Path
+import json
 
 from lib.experiment_configs import ExperimentConfigs
 from lib.subject import Subject
@@ -27,17 +28,20 @@ class Engine(ABC):
         # Initialize all paths
         self._initialize_paths()
         
-        # Set up all directories
-        self._set_directories()
+        if not self.CONFIG.ARGS.engine_type == "dataset_postprocessor":
+            # Set up all directories
+            self._set_directories()
 
-        # Initialize local directories and executables first
-        self._initialize_basic_directory_on_local()
+            # Initialize local directories and executables first
+            self._initialize_basic_directory_on_local()
 
-        # Create context for executors with updated paths
-        self.CONTEXT = self._create_context()
+            # Create context for executors with updated paths
+            self.CONTEXT = self._create_context()
 
-        # Initialize directories for machines
-        self._initialize_basic_directory_for_machines()
+            # Initialize directories for machines
+            self._initialize_basic_directory_for_machines()
+        else:
+            self.CONTEXT = self._create_context()
     
     def _initialize_paths(self):
         """Initialize all directory and file paths"""
@@ -141,9 +145,10 @@ class Engine(ABC):
 
         # Setup subject repository
         self.FILE_MANAGER.copy_directory(self.src_repo, self.dest_repo)
-        self.SUBJECT.set_files(self.dest_repo)
-        self.SUBJECT.check_required_scripts_exists()
-        self.SUBJECT.set_subject_configurations()
+        if self.SUBJECT.name is not None:
+            self.SUBJECT.set_files(self.dest_repo)
+            self.SUBJECT.check_required_scripts_exists()
+            self.SUBJECT.set_subject_configurations()
         LOGGER.debug("Subject repository copied to working directory")
 
         # Setup subject log dir
@@ -190,3 +195,18 @@ class Engine(ABC):
 
         LOGGER.info(f"Total mutants to test: {len(mutant_list)}")
         return mutant_list
+
+    def set_experiment_setup_configs(self):
+        experiment_setup_config_path = os.path.join(
+            self.config_dir,
+            "experiment_setup.rq0.json"
+        )
+        if not os.path.exists(experiment_setup_config_path):
+            LOGGER.error(f"Experiment setup config file not found at {experiment_setup_config_path}")
+            raise FileNotFoundError(f"Config file not found: {experiment_setup_config_path}")
+
+        exp_config = json.load(open(experiment_setup_config_path, 'r'))
+        for key, value in exp_config.items():
+            # set to self.CONFIG.ENV if not already set
+            if key not in self.CONFIG.ENV:
+                self.CONFIG.ENV[key] = value

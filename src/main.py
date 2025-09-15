@@ -27,14 +27,23 @@ def configurate_directories(CONFIG: ExperimentConfigs):
 
 def configurate_logger(CONFIG: ExperimentConfigs):
     if CONFIG.ARGS.engine_type:
-        log_dir = os.path.join(
-            CONFIG.ENV["ROOT_DIR"], 
-            "logs",
-            CONFIG.ARGS.experiment_label,
-            CONFIG.ARGS.subject
-        )
-        make_directory(log_dir)
-        main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.engine_type}-main.log")
+        if CONFIG.ARGS.engine_type == "dataset_postprocessor":
+            log_dir = os.path.join(
+                CONFIG.ENV["ROOT_DIR"], 
+                "logs",
+                CONFIG.ARGS.experiment_label,
+            )
+            make_directory(log_dir)
+            main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.engine_type}-main.log")
+        else:
+            log_dir = os.path.join(
+                CONFIG.ENV["ROOT_DIR"], 
+                "logs",
+                CONFIG.ARGS.experiment_label,
+                CONFIG.ARGS.subject
+            )
+            make_directory(log_dir)
+            main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.engine_type}-main.log")
     else:
         log_dir = os.path.join(
             CONFIG.ENV["ROOT_DIR"], 

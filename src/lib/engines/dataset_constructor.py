@@ -21,7 +21,7 @@ class DatasetConstructor(Engine):
         """Run the dataset construction process"""
         LOGGER.info("Running DatasetConstructor...")
         self._initialize_required_directories()
-        self._set_experiment_setup_configs()
+        self.set_experiment_setup_configs()
 
         # Get target mutants to construct dataset from
         mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS TRUE")
@@ -39,20 +39,6 @@ class DatasetConstructor(Engine):
         self.FILE_MANAGER.make_directory(self.constructed_dataset_dir)
         LOGGER.info(f"Constructed dataset directory initialized at {self.constructed_dataset_dir}")
 
-    def _set_experiment_setup_configs(self):
-        experiment_setup_config_path = os.path.join(
-            self.config_dir,
-            "experiment_setup.rq0.json"
-        )
-        if not os.path.exists(experiment_setup_config_path):
-            LOGGER.error(f"Experiment setup config file not found at {experiment_setup_config_path}")
-            raise FileNotFoundError(f"Config file not found: {experiment_setup_config_path}")
-
-        exp_config = json.load(open(experiment_setup_config_path, 'r'))
-        for key, value in exp_config.items():
-            # set to self.CONFIG.ENV if not already set
-            if key not in self.CONFIG.ENV:
-                self.CONFIG.ENV[key] = value
 
     def _worker(self, task_queue: queue.Queue):
         """Worker function to process mutants from the task queue"""
