@@ -1,5 +1,5 @@
 import logging
-from pathlib import Path
+import random
 
 from lib.engines.engine import Engine
 from lib.experiment_configs import ExperimentConfigs
@@ -22,6 +22,10 @@ class PrerequisiteDataExtractor(Engine):
 
         # Get target mutants to test
         mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS NULL")
+
+        if len(mutant_list) > int(self.CONFIG.ENV["NUMBER_BUGS_TO_EXTRACT_PREREQUISITES"]):
+            mutant_list = random.sample(mutant_list, int(self.CONFIG.ENV["NUMBER_BUGS_TO_EXTRACT_PREREQUISITES"]))
+        LOGGER.debug(f"Selected {len(mutant_list)} mutants for prerequisite data extraction")
 
         self._start_testing_for_prerequisite_data(mutant_list)
     

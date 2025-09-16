@@ -26,8 +26,8 @@ class MutationTestingResultExtractor(Engine):
         mutant_mutants_list = self._get_mutant_mutants_from_db(mutant_list)
         # TODO:TEMPORARILY REDUCE SET FOR TEST
         # only leave mutant where src_bug_idx == 153
-        # mutant_mutants_list = [item for item in mutant_mutants_list if item[3] == 153]
-        # LOGGER.debug(f"Filtered mutant mutants to process: {len(mutant_mutants_list)}")
+        mutant_mutants_list = [item for item in mutant_mutants_list if item[3] in [151, 15, 10, 14, 138, 198, 270, 165, 174, 137]]
+        LOGGER.debug(f"Filtered mutant mutants to process: {len(mutant_mutants_list)}")
 
         self._start_extracting_mutation_testing_results(mutant_mutants_list)
 

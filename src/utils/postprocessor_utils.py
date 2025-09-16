@@ -11,20 +11,15 @@ SBFL_FORMULA = [
 
 MBFL_FORMULA = ["muse", "metal"]
 
-TRANSITION_TYPES = {
-    "type1": "result_transition",
-    "type2": "exception_type_transition",
-    "type3": "exception_msg_transition",
-    "type4": "stacktrace_transition"
-}
+TRANSITION_TYPES = {"type1": "result_transition"}
 
-def normalize_data(pkl_file, EXP_CONFIG):
+def normalize_data(pkl_file, ENV):
     """
     For each SBFL formula, MR-mutationType of muse and metal,
     normalize the suspiciousness scores to be between 0 and 1
     using the rank value among the lines.
     """
-    tcr = EXP_CONFIG["tcs_reduction"]
+    tcr = ENV["tcs_reduction"]
 
     with open(pkl_file, 'rb') as f:
         data = pickle.load(f)
@@ -44,8 +39,8 @@ def normalize_data(pkl_file, EXP_CONFIG):
 
         # MBFL formula
         for formula in MBFL_FORMULA:
-            for lnc in EXP_CONFIG["target_lines"]:
-                for mtc in EXP_CONFIG["mutation_cnt"]:
+            for lnc in ENV["target_lines"]:
+                for mtc in ENV["mutation_cnt"]:
                     for transition_type, transition_key in TRANSITION_TYPES.items():
                         mbfl_key = f"lineCnt{lnc}_mutCnt{mtc}_tcs{tcr}_{transition_key}_final_{formula}_score_rank"
                         mbfl_norm_key = f"lineCnt{lnc}_mutCnt{mtc}_tcs{tcr}_{transition_key}_final_{formula}_score_norm"
@@ -89,23 +84,20 @@ def set_dataset(
         # Add ST relevance values (linear)
         line_x_list.append(line_data["st_relevance_linear"])
 
-        # Add pattern_embedding
-        line_x_list.extend(line_data["pattern_embedding"])
-
         dataset["x"][full_fault_id].append(line_x_list)
 
         # Add line index
-        if line_data["fault_line"] == 1: # 1 means faulty line here
+        if line_data["is_buggy_line"] == True: # 1 means faulty line here
             dataset["y"][full_fault_id].append(0) # we save (0 for faulty and 1 for non-faulty)
         else:
             dataset["y"][full_fault_id].append(1)
 
         if set_statement_info:
-            class_name = line_data["class"]
-            line_num = line_data["line_num"]
-            stmt_key = f"{class_name}@{line_num}"
+            file_name = line_data["file"]
+            line_num = line_data["lineno"]
+            stmt_key = f"{file_name}@{line_num}"
             statement_data[full_fault_id].append(stmt_key)
-            if line_data["fault_line"] == 1:
+            if line_data["is_buggy_line"] == True:
                 faulty_statement_data[full_fault_id].append([stmt_key])
 
 def set_for_methods(pp_data, bid_data, full_fault_id, EXP_CONFIG):

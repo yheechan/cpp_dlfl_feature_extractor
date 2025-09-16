@@ -55,9 +55,9 @@ def configurate_logger(CONFIG: ExperimentConfigs):
         )
         make_directory(log_dir)
         if CONFIG.ARGS.worker_type == "mutation_testing_result_tester":
-            main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.machine}_core{CONFIG.ARGS.core_idx}_{CONFIG.ARGS.base_bug}_{CONFIG.ARGS.mutant}.log")
+            main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.machine}--core{CONFIG.ARGS.core_idx}--{CONFIG.ARGS.base_bug}--{CONFIG.ARGS.mutant}.log")
         else:
-            main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.machine}_core{CONFIG.ARGS.core_idx}_{CONFIG.ARGS.mutant}.log")
+            main_log_file = os.path.join(log_dir, f"{CONFIG.ARGS.machine}--core{CONFIG.ARGS.core_idx}--{CONFIG.ARGS.mutant}.log")
 
     if CONFIG.ARGS.debug:
         log_level = logging.DEBUG

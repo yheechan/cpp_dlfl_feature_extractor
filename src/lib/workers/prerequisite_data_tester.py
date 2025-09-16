@@ -54,6 +54,14 @@ class PrerequisiteDataTester(Worker):
         # 2. Extract line2function mapping
         res = MUTANT.extract_line2function_mapping(self.CONTEXT)
         if not res:
+            self.DB.update(
+                "cpp_bug_info",
+                set_values={
+                    "mutant_type": "line2function_extraction_failure",
+                    "prerequisites": False
+                },
+                conditions={"bug_idx": MUTANT.bug_idx}
+            )
             LOGGER.error(f"Failed to extract line2function mapping for mutant {MUTANT.mutant_file}, skipping mutant")
             return
 
@@ -63,6 +71,14 @@ class PrerequisiteDataTester(Worker):
         # 4. Measure coverage for candidate test cases
         res = MUTANT.measure_coverage_for_candidate_test_cases(self.CONTEXT)
         if not res:
+            self.DB.update(
+                "cpp_bug_info",
+                set_values={
+                    "mutant_type": "coverage_failure",
+                    "prerequisites": False
+                },
+                conditions={"bug_idx": MUTANT.bug_idx}
+            )
             LOGGER.error(f"Failed to measure coverage for mutant {MUTANT.mutant_file}, skipping mutant")
             return
         
@@ -73,7 +89,10 @@ class PrerequisiteDataTester(Worker):
             LOGGER.warning(f"Can't use this bug due to no usable passing test case for mutant {MUTANT.mutant_file}")
             self.DB.update(
                 "cpp_bug_info",
-                set_values={"mutant_type": "no_passing_tcs"},
+                set_values={
+                    "mutant_type": "no_passing_tcs",
+                    "prerequisites": False
+                },
                 conditions={"bug_idx": MUTANT.bug_idx}
             )
             return
