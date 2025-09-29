@@ -118,11 +118,11 @@ class Worker(ABC):
             self.core_dir, self.CONFIG.ARGS.subject
         )
         self.SUBJECT.set_files(self.subject_repo)
-        self.SUBJECT.check_required_scripts_exists()
         self.SUBJECT.set_subject_configurations()
+        self.SUBJECT.check_required_scripts_exists()
         LOGGER.debug(f"Subject repository: {self.subject_repo}")
 
-        self.testcases_dir = os.path.join(self.subject_repo, "testcases")
+        self.testcases_dir = self.SUBJECT.test_case_directory
         LOGGER.debug(f"Subject testcases directory: {self.testcases_dir}")
 
         self.patch_dir = os.path.join(self.core_dir, "patches")
@@ -177,6 +177,21 @@ class Worker(ABC):
         if not os.path.exists(mutant_file_path):
             LOGGER.error(f"Mutant file {mutant_file_path} does not exist")
             return
+        
+        origin_mutant_target_file = None
+        origin_mutant_target_file_path = None
+        origin_mutant_file = None
+        origin_mutant_file_path = None
+        origin_patch_file = None
+        if self.CONFIG.ARGS.worker_type == "mutation_testing_result_tester":
+            origin_mutant_target_file = self.CONFIG.ARGS.origin_mutant_target_file
+            origin_mutant_target_file_path = os.path.join(self.core_dir, origin_mutant_target_file)
+
+            origin_mutant_file = self.CONFIG.ARGS.origin_mutant
+            origin_mutant_file_path = os.path.join(self.core_dir, f"{self.CONFIG.STAGE}-mutant_origin", origin_mutant_file)
+            
+            origin_patch_file = os.path.join(self.patch_dir, f"{self.CONFIG.ARGS.origin_mutant}.og.patch")
+
     
         # 1. Patch target_file with mutant_file
         patch_file = os.path.join(self.patch_dir, f"{self.CONFIG.ARGS.mutant}.patch")
@@ -185,11 +200,38 @@ class Worker(ABC):
             self.CONFIG.ARGS.experiment_label,
             target_file, target_file_path, 
             mutant_file, mutant_file_path,
-            patch_file, self.subject_repo
+            patch_file, self.subject_repo,
+            origin_mutant_target_file = origin_mutant_target_file,
+            origin_mutant_target_file_path = origin_mutant_target_file_path,
+            origin_mutant_file = origin_mutant_file,
+            origin_mutant_file_path = origin_mutant_file_path,
+            origin_patch_file = origin_patch_file
         )
+
+
+        if self.CONFIG.ARGS.worker_type == "mutation_testing_result_tester":
+            res = MUTANT.make_patch_file_og()
+            if not res:
+                LOGGER.error(f"Failed to create origin patch file {origin_patch_file}")
+                return
+            LOGGER.info(f"Origin patch file created at {patch_file}")
+
+            res = MUTANT.apply_patch_og(revert=False)
+            if not res:
+                LOGGER.error(f"Failed to apply ORIGIN patch {MUTANT.patch_file} to {MUTANT.target_file}, skipping mutant")
+                return
+
         res = MUTANT.make_patch_file()
         if not res:
             LOGGER.error(f"Failed to create patch file {patch_file}, skipping mutant")
             return
         LOGGER.info(f"Patch file created at {patch_file}")
+
+        if self.CONFIG.ARGS.worker_type == "mutation_testing_result_tester":
+            res = MUTANT.apply_patch_og(revert=True)
+            if not res:
+                LOGGER.error(f"Failed to revert ORIGIN patch {MUTANT.patch_file} to {MUTANT.target_file}, skipping mutant")
+                return
+
         return MUTANT
+

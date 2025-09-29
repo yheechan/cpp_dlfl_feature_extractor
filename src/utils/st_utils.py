@@ -36,10 +36,18 @@ def measure_ST_relevance(tcIdx2tcInfo, lineIdx2lineData, subject_name, scale=1.0
                 trace_index, function_name, file_path, line_number = match.groups()
                 # change file_path until <subject_name>/src/*
                 subject_index = file_path.lower().rfind(subject_name.lower())
-                if subject_index != -1:
-                    relative_path = file_path[subject_index + len(subject_name) + 1:]  # +1 to skip the slash
-                else:
-                    relative_path = file_path  # fallback to full path if subject name not found
+                relative_path = file_path  # fallback to full path if subject name not found
+                if "zlib_ng" in subject_name:
+                    if subject_index != -1:
+                        relative_path = file_path[subject_index + len(subject_name) + 1:]  # +1 to skip the slash
+                elif "NSFW_c_" in subject_name:
+                    if "src" in file_path:
+                        relative_path = file_path.split("src/")[1]
+                elif "NSFW_cpp_" in subject_name:
+                    if "nscore" in file_path:
+                        relative_path = file_path.split("nscore/")[1]
+                    if "nscore::" in function_name:
+                        function_name = function_name.split("nscore::")[1]
 
                 # We simplify the key to just the class and method name
                 if relative_path not in parsed_trace:
@@ -47,6 +55,7 @@ def measure_ST_relevance(tcIdx2tcInfo, lineIdx2lineData, subject_name, scale=1.0
                 if function_name not in parsed_trace[relative_path]:
                     parsed_trace[relative_path][function_name] = []
                 # Store both line number and trace index for relevance calculation
+                LOGGER.debug(f"[parsed_trace] {relative_path} - {function_name} - {line_number}")
                 parsed_trace[relative_path][function_name].append({
                     'line_number': int(line_number),
                     'trace_index': int(trace_index)
@@ -57,8 +66,8 @@ def measure_ST_relevance(tcIdx2tcInfo, lineIdx2lineData, subject_name, scale=1.0
         st_distance = None
         st_relevance_linear = 0.0
 
-        fileName = line_data["file"]
-        functionName = line_data["function"]
+        fileName = line_data["file"].lower()
+        functionName = line_data["function"].lower()
         lineNum = line_data["lineno"]
 
         subject_index = fileName.lower().rfind(subject_name.lower())
@@ -74,6 +83,8 @@ def measure_ST_relevance(tcIdx2tcInfo, lineIdx2lineData, subject_name, scale=1.0
         else:
             candidate_functionName = functionName
         candidate_lineNum = int(lineNum)
+
+        LOGGER.debug(f"[candidate_name] {candidate_fileName} - {candidate_functionName} - {candidate_lineNum}")
 
         if candidate_fileName in parsed_trace:
             if candidate_functionName in parsed_trace[candidate_fileName]:

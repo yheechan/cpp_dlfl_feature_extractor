@@ -18,7 +18,13 @@ class Mutant:
                     subject: str = None, experiment_label: str = None,
                     target_file: str = None, target_file_path: str = None,
                     mutant_file: str = None, mutant_file_path: str = None,
-                    patch_file: str = None, repo_dir: str = None):
+                    patch_file: str = None, repo_dir: str = None,
+                    origin_mutant_target_file = None,
+                    origin_mutant_target_file_path = None,
+                    origin_mutant_file = None,
+                    origin_mutant_file_path = None,
+                    origin_patch_file = None
+                    ):
         LOGGER.info("Mutant initialized")
         self.subject = subject
         self.experiment_label = experiment_label
@@ -32,6 +38,12 @@ class Mutant:
         self.repo_dir = repo_dir
         self.core_dir = os.path.dirname(self.repo_dir)
 
+        self.origin_mutant_target_file = origin_mutant_target_file
+        self.origin_mutant_target_file_path = origin_mutant_target_file_path
+        self.origin_mutant_file = origin_mutant_file
+        self.origin_mutant_file_path = origin_mutant_file_path
+        self.origin_patch_file = origin_patch_file
+
         self.bug_idx = None
         self.tc_info = {"fail": [], "pass": [], "crashed": [], "cctc": []}
 
@@ -41,6 +53,18 @@ class Mutant:
             res = sp.run(cmd, stdout=open(self.patch_file, 'w'))
             if res.returncode not in [0, 1]:  # diff returns 0 if no differences, 1 if differences found
                 LOGGER.error(f"Error creating patch file with command: {' '.join(cmd)}")
+                return False
+            return True
+        except Exception as e:
+            LOGGER.error(f"Error executing command: {' '.join(cmd)}")
+            raise e
+    
+    def make_patch_file_og(self):
+        cmd = ["diff", self.origin_mutant_target_file_path, self.origin_mutant_file_path]
+        try:
+            res = sp.run(cmd, stdout=open(self.origin_patch_file, 'w'))
+            if res.returncode not in [0, 1]:  # diff returns 0 if no differences, 1 if differences found
+                LOGGER.error(f"Error creating origin patch file with command: {' '.join(cmd)}")
                 return False
             return True
         except Exception as e:
@@ -63,6 +87,24 @@ class Mutant:
             return True
         except Exception as e:
             LOGGER.error(f"Exception occurred while applying patch with command: {' '.join(cmd)}")
+            raise e
+    
+    def apply_patch_og(self, revert=False):
+        if revert:
+            cmd = ["patch", "-R", "-i", self.origin_patch_file, self.origin_mutant_target_file_path]
+        else:
+            cmd = ["patch", "-i", self.origin_patch_file, self.origin_mutant_target_file_path]
+
+        try:
+            res = sp.run(cmd, stdout=sp.DEVNULL, stderr=sp.PIPE)
+            if res.returncode != 0:
+                LOGGER.error(f"Error applying ORIGIN patch with command: {' '.join(cmd)}")
+                LOGGER.error(f"Error output: {res.stderr.decode().strip()}")
+                return False
+            LOGGER.debug(f"ORIGN Patch applied successfully with command: {' '.join(cmd)}")
+            return True
+        except Exception as e:
+            LOGGER.error(f"Exception occurred while applying ORIGIN patch with command: {' '.join(cmd)}")
             raise e
 
     def run_test_with_testScript(self, tc_script: str):
@@ -170,7 +212,8 @@ class Mutant:
         tc_info = DB.read(
             "cpp_tc_info",
             columns="tc_name, tc_result, tc_idx, relevant_tcs",
-            conditions={"bug_idx": self.bug_idx}
+            conditions={"bug_idx": self.bug_idx},
+            special="AND tc_idx != -1"
         )
         tc_list = []
         for tc_name, tc_result, tc_idx, relevant_tcs in tc_info:
@@ -286,8 +329,16 @@ class Mutant:
         model_file = cov_data["files"][0]["file"]
         if len(model_file.split("/")) == 1:
             target_file = self.target_file.split("/")[-1]
-        elif not "zlib_ng" in self.subject and CONTEXT.SUBJECT.subject_configs["cov_compiled_with_clang"] == False:
+        elif not "zlib_ng" in self.subject \
+            and CONTEXT.SUBJECT.subject_configs["cov_compiled_with_clang"] == False \
+            and not "NSFW_c_" in self.subject \
+            and not "NSFW_cpp_" in self.subject:
             target_file = self.target_file
+        elif "NSFW_c_" in self.subject:
+            # cut until src
+            target_file = self.target_file.split("src/")[1]
+        elif "NSFW_cpp_" in self.subject:
+            target_file = self.target_file.split("NSCore/")[1]
         else:
             target_file = "/".join(self.target_file.split("/")[1:])
 
@@ -342,6 +393,10 @@ class Mutant:
             filename = target_code_file.split("/")[-1]
         elif for_buggy_line_key and "zlib_ng" in self.subject:
             filename = "/".join(target_code_file.split("/")[1:])
+        elif for_buggy_line_key and ("NSFW_c_" in self.subject):
+            filename = target_code_file.split("src/")[1]
+        elif for_buggy_line_key and ("NSFW_cpp_" in self.subject):
+            filename = target_code_file.split("NSCore/")[1]
         elif not for_buggy_line_key and "vim" in self.subject:
             filename = f"{self.subject}/"+target_code_file
         else:
@@ -369,7 +424,7 @@ class Mutant:
 
 
         # 2. Build the subject, if build fails, skip the mutant
-        res = execute_bash_script(CONTEXT.SUBJECT.build_script, CONTEXT.subject_repo)
+        res = execute_bash_script(CONTEXT.SUBJECT.build_script, CONTEXT.SUBJECT.build_script_working_directory)
         if res != 0:
             LOGGER.warning(f"Build failed after applying patch {self.patch_file}, skipping mutant")
             self.apply_patch(revert=True)
@@ -442,7 +497,7 @@ class Mutant:
             return False
         
         # 2. Build the subject, if build fails, skip the mutant
-        res = execute_bash_script(CONTEXT.SUBJECT.build_script, CONTEXT.subject_repo)
+        res = execute_bash_script(CONTEXT.SUBJECT.build_script, CONTEXT.SUBJECT.build_script_working_directory)
         if res != 0:
             LOGGER.warning(f"Build failed after applying patch {self.patch_file}, skipping mutant")
             self.apply_patch(revert=True)
@@ -474,12 +529,34 @@ class Mutant:
                         LOGGER.error(f"Failing test case {tc_name} does not cover buggy line {self.buggy_lineno}")
                         self.apply_patch(revert=True)
                         raise ValueError(f"Failing test case {tc_name} does not cover buggy line {self.buggy_lineno}")
-                
+
+        if CONTEXT.SUBJECT.subject_configs["test_initialization"]["status"] == True:
+            self._save_initialization_tc_cov(CONTEXT)     
             
         # 3. Apply revert patch
         self.apply_patch(revert=True)
 
         return True
+    
+    def _save_initialization_tc_cov(self, CONTEXT: WorkerContext):
+        # 2.1 remove all gcda files
+        self.remove_all_gcda()
+        
+        # 2.2 execute
+        exec_wd = os.path.join(self.core_dir, CONTEXT.SUBJECT.subject_configs["test_initialization"]["execution_path"])
+        cmd = CONTEXT.SUBJECT.subject_configs["test_initialization"]["init_cmd"]
+        res = sp.run(
+            cmd,
+            shell=True, cwd=exec_wd, # 2024-08-12 SPECIFICALLY CHANGE THIS MANUALLY
+            stderr=sp.PIPE, stdout=sp.PIPE,
+            env=os.environ
+        )
+
+        # 2.3 remove untargeted files for gcovr
+        self.remove_untargeted_files_for_gcovr(CONTEXT)
+
+        # 2-4. Collect coverage
+        raw_cov_file = self.generate_coverage_json(CONTEXT, "initialization.00")
 
     def update_cctcs_in_db(self, DB: CRUD):
         if len(self.tc_info["cctc"]) == 0:
@@ -552,6 +629,24 @@ class Mutant:
             tcsIdx2lineCovBitVal[tc_idx] = int("".join(lineCovBitSeq), 2)
         return tcsIdx2lineCovBitVal
     
+    def _get_lineCovBitVal_for_initialization_cmd(self, CONTEXT: WorkerContext):
+        lineCovBitSeq = ['0'] * len(self.lineKey2lineIdx)
+        raw_cov_file = os.path.join(CONTEXT.coverage_dir, self.mutant_name, "initialization.raw.json")
+        with open(raw_cov_file, 'r') as f:
+            cov_data = json.load(f)
+        
+        for file in cov_data["files"]:
+            filename = file["file"]
+            for lineIdx, lineData in enumerate(file["lines"]):
+                line_number = lineData["line_number"]
+                count = lineData["count"]
+                key = self.make_key(filename, line_number)
+                idx = self.lineKey2lineIdx[key]
+
+                if int(count) > 0:
+                    lineCovBitSeq[idx] = '1'
+        return int("".join(lineCovBitSeq), 2)
+    
     def save_candidate_lines_to_db(self, DB: CRUD, candidate_lineKeys2newlineIdx: dict):
         buggy_file, buggy_function, buggy_lineno = self.buggy_line_key.split("#")
         for lineKey, newIdx in candidate_lineKeys2newlineIdx.items():
@@ -575,11 +670,7 @@ class Mutant:
                 values
             )
     
-    def update_tc_result_to_irrelevant(self, DB: CRUD, notRelevantTCs: list):
-        if len(notRelevantTCs) == 0:
-            LOGGER.debug(f"No irrelevant test cases found for mutant {self.mutant_name}, not updating DB")
-            return
-        
+    def update_tc_result_to_irrelevant(self, DB: CRUD, notRelevantTCs: list):       
         for tc_result_type in ["fail", "pass", "cctc", "crashed"]:
             for tc_idx, tc_name in self.tc_info[tc_result_type]:
                 relevant_status = True
@@ -674,7 +765,6 @@ class Mutant:
                 newIdx += 1
                 lineKey = self.lineIdx2lineKey[bitCharIdx]
                 candidate_lineKeys2newlineIdx[lineKey] = newIdx
-                LOGGER.debug(f"Candidate line: {lineKey} assigned newIdx: {newIdx}")
                 if lineKey == self.buggy_line_key:
                     LOGGER.debug(f"FOUND buggy line in candidates: {lineKey}")
         
@@ -697,6 +787,33 @@ class Mutant:
         reformedFailTcs2lineCovBitVal = reform_covBitVal_to_candidate_lines(failTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines, self.lineIdx2lineKey)
         reformedPassTcs2lineCovBitVal = reform_covBitVal_to_candidate_lines(passTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines, self.lineIdx2lineKey)
         reformedCctcTcs2lineCovBitVal = reform_covBitVal_to_candidate_lines(cctcTcs2lineCovBitVal, candidate_lineKeys2newlineIdx, numTotalLines, self.lineIdx2lineKey)
+
+        if CONTEXT.SUBJECT.subject_configs["test_initialization"]["status"] == True:
+            initializationCovBitVal = self._get_lineCovBitVal_for_initialization_cmd(CONTEXT)
+            # LOGGER.debug(f"achieved initializationCovBitVal: {initializationCovBitVal}")
+            reformedInitializationCovBitVal = reform_covBitVal_to_candidate_lines(
+                {"initialization_cmd": initializationCovBitVal},
+                candidate_lineKeys2newlineIdx, 
+                numTotalLines, self.lineIdx2lineKey
+            )
+            initLineCovBitValStr = format(initializationCovBitVal, f'0{numTotalLines}b')
+            reformedInitLineCovBitValStr = format(reformedInitializationCovBitVal["initialization_cmd"], f'0{len(candidate_lineKeys2newlineIdx)}b')
+            cols = [
+                "bug_idx", "tc_idx", "tc_name",
+                "tc_result", "tc_ret_code", "execution_time_ms",
+                "full_bit_sequence_length", "full_line_coverage_bit_sequence",
+                "bit_sequence_length", "line_coverage_bit_sequence",
+                "relevant_tcs"
+            ]
+            col_str = ", ".join(cols)
+            values = [
+                self.bug_idx, -1, "initialization",
+                "initialization", 0, 0,
+                numTotalLines, initLineCovBitValStr,
+                len(candidate_lineKeys2newlineIdx), reformedInitLineCovBitValStr,
+                False
+            ]
+            DB.insert("cpp_tc_info", col_str, values)
 
         self.save_lineCovBit_to_db(DB, failTcs2lineCovBitVal, "fail", "full_", numTotalLines)
         self.save_lineCovBit_to_db(DB, passTcs2lineCovBitVal, "pass", "full_", numTotalLines)
@@ -738,6 +855,7 @@ class Mutant:
         return extract_execution_cmd_from_test_script_file(tc_script)
 
     def extract_stack_trace_for_failing_tests(self, CONTEXT: WorkerContext, DB: CRUD):
+        LOGGER.debug(f"starting stack trace extraction")
         test_execution_point = os.path.join(self.core_dir, CONTEXT.SUBJECT.subject_configs["testcase_execution_point"])
         source_code_filename = self.target_code_file.split("/")[-1]
         line_number = self.buggy_lineno
@@ -748,7 +866,10 @@ class Mutant:
             execution_cmd = self.extract_execution_command(tc_script_path)
             
             # 2. make gdb script
-            gdb_script_txt = make_gdb_script_txt(test_execution_point, source_code_filename, line_number)
+            if "NSFW_cpp_" in self.subject:
+                gdb_script_txt = make_gdb_script_txt_cpp(test_execution_point, source_code_filename, line_number)
+            else:
+                gdb_script_txt = make_gdb_script_txt(test_execution_point, source_code_filename, line_number)
 
             # 3. run gdb
             gdb_cmd = f"gdb -x gdb_script.txt -batch --args {execution_cmd}"
@@ -766,6 +887,7 @@ class Mutant:
 
             # 4. save stack trace to DB
             if stack_trace != "":
+                LOGGER.debug(stack_trace)
                 DB.update(
                     "cpp_tc_info",
                     set_values={"stacktrace": stack_trace},

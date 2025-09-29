@@ -6,6 +6,7 @@ class EngineContext:
     """Contains all the data needed by executors without circular dependencies"""
     CONFIG: Any  # ExperimentConfigs
     FILE_MANAGER: Any
+    SUBJECT: Any
     
     # Directory paths
     tools_dir: str

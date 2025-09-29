@@ -37,11 +37,11 @@ class MutantGeneratorWorker(Worker):
         # 1. Configure subject
         if self.CONFIG.ARGS.needs_configuration:
             LOGGER.info("Configuring subject")
-            execute_bash_script(self.SUBJECT.configure_no_cov_script, self.subject_repo)
+            execute_bash_script(self.SUBJECT.configure_no_cov_script, self.SUBJECT.build_script_working_directory)
         
             # 2. Build subject
             LOGGER.info("Building subject")
-            execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
+            execute_bash_script(self.SUBJECT.build_script, self.SUBJECT.build_script_working_directory)
 
         # 3. Generate mutant mutants
         LOGGER.info("Generating mutant mutants")
@@ -64,7 +64,8 @@ class MutantGeneratorWorker(Worker):
             return
         
         # 3. Build the subject, if build fails, skip the mutant
-        res = execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
+        execute_bash_script(self.SUBJECT.clean_script, self.SUBJECT.build_script_working_directory)
+        res = execute_bash_script(self.SUBJECT.build_script, self.SUBJECT.build_script_working_directory)
         if res != 0:
             LOGGER.error(f"Build failed after applying patch {MUTANT.patch_file}, skipping mutant")
             MUTANT.apply_patch(revert=True)
@@ -86,7 +87,7 @@ class MutantGeneratorWorker(Worker):
             LOGGER.debug(f"Found target file mutant directories: {target_file_mutant_dirs}")
 
         # 6. Get generated mutants
-        generated_mutants = self._get_generated_mutants(targetFile2fileInfo)
+        generated_mutants = self._get_generated_mutants(targetFile2fileInfo, MUTANT)
         LOGGER.debug(f"Generated {len(generated_mutants)} mutants for mutant {MUTANT.mutant_file}")
 
         # 7. Get mutation info record from music csv-DB
@@ -98,11 +99,18 @@ class MutantGeneratorWorker(Worker):
         # 9. Update bug_idx mutants_generated status in DB
         self.update_status_column_in_db(MUTANT.bug_idx, "mutants_generated")
 
+        # 10. Revert after completion
+        MUTANT.apply_patch(revert=True)
+
     def _make_required_directories_for_mutant_mutants(self, MUTANT: Mutant):
         target_files = []
         for lineIdx, lineInfo in MUTANT.lineIdx2lineKey.items():
             target_file = lineInfo["file"]
             if target_file not in target_files:
+                if "NSFW_c_" in MUTANT.subject:
+                    target_file = "NSFW/src/"+target_file
+                if "NSFW_cpp_" in MUTANT.subject:
+                    target_file = "NSCore/"+target_file
                 target_files.append(target_file)
 
                 target_file_mutant_dir_name = target_file.replace("/", "#")
@@ -117,6 +125,10 @@ class MutantGeneratorWorker(Worker):
         targetFiles2fileInfo = {}
         for lineIdx, lineInfo in MUTANT.lineIdx2lineKey.items():
             target_file = lineInfo["file"]
+            if "NSFW_c_" in MUTANT.subject:
+                target_file = f"NSFW/src/"+target_file
+            if "NSFW_cpp_" in MUTANT.subject:
+                target_file = f"NSCore/"+target_file
             line_num = lineInfo["lineno"]
             # TODO: HERE WE HAVE STARTED FROM SUBJECT_REPO BECAUSE ZLIB_NG's LINE_INFO CONTAINS FROM REPO ROOT
             target_file_path = os.path.join(self.subject_repo, target_file)
@@ -148,9 +160,10 @@ class MutantGeneratorWorker(Worker):
                 "-p", str(compile_command_path), # compile_commands.json path
             ]
             execute_command_as_list(cmd)
+            LOGGER.debug(" ".join(cmd))
             LOGGER.info(f"Mutants generated for {target_file} on lines {line_nums_str} in {target_file_mutant_dir_path}")
     
-    def _get_generated_mutants(self, targetFile2fileInfo: dict):
+    def _get_generated_mutants(self, targetFile2fileInfo: dict, MUTANT: Mutant):
         mutant_list = []
 
         extension = "*.c" if self.SUBJECT.subject_configs["subject_language"] == "C" else "*.cpp"
@@ -159,6 +172,10 @@ class MutantGeneratorWorker(Worker):
             target_file_mutant_dir_name = target_file.replace("/", "#")
             target_file_mutant_dir_path = os.path.join(self.version_mutant_mutants_dir, target_file_mutant_dir_name)
             target_mutants = list(Path(target_file_mutant_dir_path).glob(extension))
+            if "NSFW_c_" in MUTANT.subject:
+                target_file = target_file.split("src/")[1]
+            if "NSFW_cpp_" in MUTANT.subject:
+                target_file = target_file.split("NSCore/")[1]
             for mutant in target_mutants:
                 mutant_list.append((target_file, mutant))
         return mutant_list
@@ -176,6 +193,10 @@ class MutantGeneratorWorker(Worker):
                 LOGGER.error(f"Mutation database file not found: {mut_db_file}")
                 raise FileNotFoundError(f"Mutation database file not found: {mut_db_file}")
 
+            if "NSFW_c_" in MUTANT.subject:
+                target_file = target_file.split("src/")[1]
+            if "NSFW_cpp_" in MUTANT.subject:
+                target_file = target_file.split("NSCore/")[1]
             if target_file not in mutation_info_record:
                 mutation_info_record[target_file] = {}
             
@@ -188,6 +209,7 @@ class MutantGeneratorWorker(Worker):
                     mut_name = row[0]
                     op = row[1]
                     pre_start_line = int(row[2])
+
                     lineIdx = MUTANT.filename2lineNum2lineIdx[target_file][pre_start_line]
 
                     mutation_info_record[target_file][mut_name] = {

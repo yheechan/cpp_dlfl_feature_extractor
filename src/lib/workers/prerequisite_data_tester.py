@@ -24,11 +24,12 @@ class PrerequisiteDataTester(Worker):
         # 1. Configure subject
         if self.CONFIG.ARGS.needs_configuration:
             LOGGER.info("Configuring subject")
-            execute_bash_script(self.SUBJECT.configure_yes_cov_script, self.subject_repo)
+            execute_bash_script(self.SUBJECT.configure_yes_cov_script, self.SUBJECT.build_script_working_directory)
         
             # 2. Build subject
             LOGGER.info("Building subject")
-            execute_bash_script(self.SUBJECT.build_script, self.subject_repo)
+            execute_bash_script(self.SUBJECT.build_script, self.SUBJECT.build_script_working_directory)
+            LOGGER.debug(f"build_script_working_directory: {self.SUBJECT.build_script_working_directory}")
         self.SUBJECT.set_environmental_variables(self.core_dir)
 
         # 3. Test mutant

@@ -20,43 +20,70 @@ class MutationTestingResultExtractor(Engine):
         LOGGER.info("Running Mutation Testing Result Extractor")
 
         # Get target mutants to generate mutants from
-        mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL")
+        if "NSFW_c_msg" in self.CONFIG.ARGS.subject or "NSFW_cpp_thread" in self.CONFIG.ARGS.subject:
+            mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL")
+        elif "NSFW_c_frw" in self.CONFIG.ARGS.subject:
+            mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS TRUE")
+            LOGGER.debug(f"mbfl is true mutants {len(mutant_list)}")
+            curr_cnt = len(mutant_list)
+            limit_cnt = 50 - curr_cnt
+            new_mutant_list = self.get_target_mutants(f"AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL LIMIT {limit_cnt}")
+            mutant_list.extend(new_mutant_list)
+            LOGGER.debug(f"EXTENDED mutant list length is {len(mutant_list)}")
+        else:
+            mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL LIMIT 50")
         LOGGER.debug(f"Total mutants to process: {len(mutant_list)}")
 
         mutant_mutants_list = self._get_mutant_mutants_from_db(mutant_list)
-        # TODO:TEMPORARILY REDUCE SET FOR TEST
-        # only leave mutant where src_bug_idx == 153
-        mutant_mutants_list = [item for item in mutant_mutants_list if item[3] in [151, 15, 10, 14, 138, 198, 270, 165, 174, 137]]
-        LOGGER.debug(f"Filtered mutant mutants to process: {len(mutant_mutants_list)}")
+        LOGGER.debug(f"Testing on {len(mutant_mutants_list)} mutants")
+        
+        # # TODO:TEMPORARILY REDUCE SET FOR TEST
+        # # only leave mutant where src_bug_idx == 153
+        # mutant_mutants_list = [item for item in mutant_mutants_list if item[4] in [14195]]
+        # LOGGER.debug(f"Filtered mutant mutants to process: {len(mutant_mutants_list)}")
+        # mutant_mutants_list = mutant_mutants_list[:1]
+        # LOGGER.debug(f"Only testing one mutant {mutant_mutants_list}")
 
         self._start_extracting_mutation_testing_results(mutant_mutants_list)
 
-        # zip subject_mutant_mutants_dir
+        # # # zip subject_mutant_mutants_dir
         self.FILE_MANAGER.zip_directory(self.mutant_mutants_dir, self.mutant_mutants_dir)
-    
+
 
     def _get_mutant_mutants_from_db(self, mutant_list: list) -> list:
         """Retrieve mutant mutants from the database based on the given mutant list"""
         mutant_mutants_list = []
-        for i, (src_target_cod_file, src_mutant_path, src_target_file_mutant_dir_path, src_bug_idx) in enumerate(mutant_list):
+        for i, (origin_target_code_file, origin_mutant_path, origin_target_file_mutant_dir_path, origin_bug_idx) in enumerate(mutant_list):
             res = self.DB.read(
                 "cpp_mutation_info",
                 columns="targetting_file, mutant_filename, mutant_idx",
-                conditions={"bug_idx": src_bug_idx}
+                conditions={"bug_idx": origin_bug_idx},
+                special=" AND build_result IS NULL"
             )
-            for tgt_target_code_file, tgt_mutant_filename, tgt_mutant_idx in res:
+            for new_target_code_file, new_mutant_filename, new_mutant_idx in res:
                 # TODO: I have change this because for zlib we save without subject prefix in mutation_info table
-                baseline_target_file = f"{self.CONFIG.ARGS.subject}/{tgt_target_code_file}"
-                tgt_target_code_file_mutant_dir_name = tgt_target_code_file.replace("/", "#")
-                tgt_target_code_file_mutant_dir_path = os.path.join(self.mutant_mutants_dir, src_mutant_path.name, tgt_target_code_file_mutant_dir_name)
-                tgt_mutant_path = Path(os.path.join(tgt_target_code_file_mutant_dir_path, tgt_mutant_filename))
+                # --target-file NSFW_c_frw/NSFW/src/frw/ns_event.c --mutant ns_event.MUT377.c
+                if "zlib_ng" in self.CONFIG.ARGS.subject:
+                    new_target_file = f"{self.CONFIG.ARGS.subject}/{new_target_code_file}"
+                if "NSFW_c_" in self.CONFIG.ARGS.subject:
+                    new_target_file = f"{self.CONFIG.ARGS.subject}/NSFW/src/{new_target_code_file}"
+                    new_target_code_file = "NSFW/src/"+new_target_code_file
+                if "NSFW_cpp_" in self.CONFIG.ARGS.subject:
+                    new_target_file = f"{self.CONFIG.ARGS.subject}/NSCore/{new_target_code_file}"
+                    new_target_code_file = "NSCore/"+new_target_code_file
+
+
+                new_target_code_file_mutant_dir_name = new_target_code_file.replace("/", "#")
+                new_target_code_file_mutant_dir_path = os.path.join(self.mutant_mutants_dir, origin_mutant_path.name, new_target_code_file_mutant_dir_name)
+                new_mutant_path = Path(os.path.join(new_target_code_file_mutant_dir_path, new_mutant_filename))
 
                 mutant_mutants_list.append((
-                    baseline_target_file,
-                    src_mutant_path,
-                    tgt_mutant_path,
-                    src_bug_idx,
-                    tgt_mutant_idx
+                    origin_target_code_file,
+                    new_target_file,
+                    origin_mutant_path,
+                    new_mutant_path,
+                    origin_bug_idx,
+                    new_mutant_idx
                 ))
         LOGGER.info(f"Total mutant mutants to process: {len(mutant_mutants_list)}")
         return mutant_mutants_list

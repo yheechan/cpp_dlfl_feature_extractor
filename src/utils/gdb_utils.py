@@ -10,6 +10,17 @@ def make_gdb_script_txt(testcase_execution_point: str, source_code_filename: str
         f.write("q\n")
     return gdb_script_txt
 
+def make_gdb_script_txt_cpp(testcase_execution_point: str, source_code_filename: str, line_number: int) -> str:
+    gdb_script_txt = os.path.join(testcase_execution_point, "gdb_script.txt")
+    with open(gdb_script_txt, 'w') as f:
+        f.write("start\n")
+        f.write(f"break {source_code_filename}:{line_number}\n")
+        f.write("r\n")
+        f.write("bt\n")
+        f.write("c\n")
+        f.write("q\n")
+    return gdb_script_txt
+
 
 
 def extract_execution_cmd_from_test_script_file(tc_script: str) -> str:

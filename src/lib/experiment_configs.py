@@ -102,9 +102,14 @@ class ExperimentConfigs:
 
         # Only required for Stage05 worker: mutation_testing_result_extractor
         self.PARSER.add_argument(
-            "-vv", "--base-bug",
+            "-omtf", "--origin-mutant-target-file",
             type=str,
-            help="Specify the base bug mutant name for mutation testing result extraction"
+            help="Specify the origin bug mutant name for mutation testing result extraction"
+        )
+        self.PARSER.add_argument(
+            "-om", "--origin-mutant",
+            type=str,
+            help="Specify the origin bug mutant name for mutation testing result extraction"
         )
         self.PARSER.add_argument(
             "-bid", "--bug-id",

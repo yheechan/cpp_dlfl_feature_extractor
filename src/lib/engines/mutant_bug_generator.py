@@ -48,15 +48,16 @@ class MutantBugGenerator(Engine):
         target_file_info_list = self._make_required_directories()
 
         # Configure with no coverage option & build
-        execute_bash_script(self.SUBJECT.configure_no_cov_script, self.dest_repo)
-        execute_bash_script(self.SUBJECT.build_script, self.dest_repo)
+        execute_bash_script(self.SUBJECT.configure_no_cov_script, self.SUBJECT.build_script_working_directory)
+        execute_bash_script(self.SUBJECT.build_script, self.SUBJECT.build_script_working_directory)
 
         # Generate mutants for each target file
         self._generate_mutants_for_target_files(target_file_info_list)
         mutant_list = self._get_generated_mutants(target_file_info_list)
+        LOGGER.debug(f"Generated {len(mutant_list)} mutants by music")
 
         # Clean up build artifacts
-        execute_bash_script(self.SUBJECT.clean_script, self.dest_repo)
+        execute_bash_script(self.SUBJECT.clean_script, self.SUBJECT.build_script_working_directory)
 
         self._start_testing_for_mutant_bugs(mutant_list)
 
@@ -117,12 +118,21 @@ class MutantBugGenerator(Engine):
             if os.path.basename(target_file_mutant_dir_path) in without_some_mut_op:
                 unused_ops += "," + ",".join(["CGCR", "CLCR", "CGSR", "CLSR"])
             
+            max_per_line = 1
+            if self.SUBJECT.name == "NSFW_c_frw":
+                max_per_line = 3
+            elif  self.SUBJECT.name == "NSFW_c_timer":
+                max_per_line = 40
+            elif  self.SUBJECT.name == "NSFW_c_msg":
+                max_per_line = 40
+            LOGGER.debug(f"{self.SUBJECT.name} makes {max_per_line} max mutants per line")
+            
             cmd = [
                 self.musicup_exec,
                 str(target_file_path),
                 "-o", str(target_file_mutant_dir_path),
-                "-ll", "1",
-                "-l", "20",
+                "-ll", str(max_per_line), # maximum 20 mutants per line
+                "-l", "20", # maximum 20 mutants per mutant operator
                 "-d", unused_ops,
                 "-p", str(self.SUBJECT.compile_commands_json_path)
             ]

@@ -43,15 +43,15 @@ class PrerequisiteDataExtractor(Engine):
                     "is_buggy_line BOOLEAN DEFAULT NULL",
                     "FOREIGN KEY (bug_idx) REFERENCES cpp_bug_info(bug_idx) ON DELETE CASCADE ON UPDATE CASCADE" # -- Automatically delete tc_info rows when bug_info is deleted, Update changes in bug_info to tc_info
                 ]
-            col_str = ", ".join(columns)
-            self.DB.create_table("cpp_line_info", col_str)
+                col_str = ", ".join(columns)
+                self.DB.create_table("cpp_line_info", col_str)
 
-            # Create a composite index on (subject, experiment_name, version)
-            self.DB.create_index(
-                "cpp_line_info",
-                "idx_cpp_line_info_bug_idx",
-                "bug_idx"
-            )
+                # Create a composite index on (subject, experiment_name, version)
+                self.DB.create_index(
+                    "cpp_line_info",
+                    "idx_cpp_line_info_bug_idx",
+                    "bug_idx"
+                )
         
         _init_cpp_line_info_table()
     

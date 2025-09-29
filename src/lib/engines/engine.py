@@ -38,8 +38,9 @@ class Engine(ABC):
             # Create context for executors with updated paths
             self.CONTEXT = self._create_context()
 
-            # Initialize directories for machines
-            self._initialize_basic_directory_for_machines()
+            if not self.CONFIG.ARGS.engine_type == "dataset_constructor":
+                # Initialize directories for machines
+                self._initialize_basic_directory_for_machines()
         else:
             self.CONTEXT = self._create_context()
     
@@ -71,6 +72,7 @@ class Engine(ABC):
         return EngineContext(
             CONFIG=self.CONFIG,
             FILE_MANAGER=self.FILE_MANAGER,
+            SUBJECT=self.SUBJECT,
             tools_dir=self.tools_dir,
             log_dir=self.log_dir,
             out_dir=self.out_dir,
@@ -121,8 +123,6 @@ class Engine(ABC):
             self.working_dir, self.CONFIG.ARGS.subject
         )
         LOGGER.debug(f"Subject destination repository: {self.dest_repo}")
-        self.testcases_dir = os.path.join(self.dest_repo, "testcases")
-        LOGGER.debug(f"Subject testcases directory: {self.testcases_dir}")
 
     def _initialize_basic_directory_on_local(self):
         """Set up the basic working directory structure on the local machine"""
@@ -147,8 +147,10 @@ class Engine(ABC):
         self.FILE_MANAGER.copy_directory(self.src_repo, self.dest_repo)
         if self.SUBJECT.name is not None:
             self.SUBJECT.set_files(self.dest_repo)
-            self.SUBJECT.check_required_scripts_exists()
             self.SUBJECT.set_subject_configurations()
+            self.SUBJECT.check_required_scripts_exists()
+            self.testcases_dir = self.SUBJECT.test_case_directory
+            LOGGER.debug(f"Subject testcases directory: {self.testcases_dir}")
         LOGGER.debug("Subject repository copied to working directory")
 
         # Setup subject log dir

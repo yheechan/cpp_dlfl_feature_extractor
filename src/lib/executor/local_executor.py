@@ -30,6 +30,9 @@ class LocalExecutor(Executor):
             assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
             CONTEXT.FILE_MANAGER.make_specific_directory(assigned_works_dir, machine=machine_name)
             LOGGER.debug(f"Assigned works directory created at: {assigned_works_dir}")
+            if CONTEXT.CONFIG.STAGE == "stage05":
+                mutant_origin_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-mutant_origin")
+                CONTEXT.FILE_MANAGER.make_specific_directory(mutant_origin_dir, machine=machine_name)
 
             # Copy subject repository to each machine core working env
             dest_repo_in_core = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject)
@@ -94,8 +97,9 @@ class LocalExecutor(Executor):
                 except Exception as e:
                     LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an unexpected error: {e}")
             
-            clean_script = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject, "clean_script.sh")
-            execute_bash_script(clean_script, os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject))
+            clean_script_dir = os.path.join(machine_core_dir, CONTEXT.SUBJECT.subject_configs["build_script_working_directory"])
+            clean_script = os.path.join(clean_script_dir, "clean_script.sh")
+            execute_bash_script(clean_script, clean_script_dir)
             LOGGER.info(f"Worker {machine_name}::core{core_idx} exiting")
 
 
@@ -124,8 +128,9 @@ class LocalExecutor(Executor):
             machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
             assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
             
-            clean_script = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject, "clean_script.sh")
-            execute_bash_script(clean_script, os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject))
+            clean_script_dir = os.path.join(machine_core_dir, CONTEXT.SUBJECT.subject_configs["build_script_working_directory"])
+            clean_script = os.path.join(clean_script_dir, "clean_script.sh")
+            execute_bash_script(clean_script, clean_script_dir)
 
             needs_configuration = True
             while True:
@@ -198,8 +203,9 @@ class LocalExecutor(Executor):
             machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
             assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
             
-            clean_script = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject, "clean_script.sh")
-            execute_bash_script(clean_script, os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject))
+            clean_script_dir = os.path.join(machine_core_dir, CONTEXT.SUBJECT.subject_configs["build_script_working_directory"])
+            clean_script = os.path.join(clean_script_dir, "clean_script.sh")
+            execute_bash_script(clean_script, clean_script_dir)
 
             needs_configuration = True
             while True:
@@ -271,8 +277,9 @@ class LocalExecutor(Executor):
             machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
             assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
             
-            clean_script = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject, "clean_script.sh")
-            execute_bash_script(clean_script, os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject))
+            clean_script_dir = os.path.join(machine_core_dir, CONTEXT.SUBJECT.subject_configs["build_script_working_directory"])
+            clean_script = os.path.join(clean_script_dir, "clean_script.sh")
+            execute_bash_script(clean_script, clean_script_dir)
 
             needs_configuration = True
             while True:
@@ -343,9 +350,11 @@ class LocalExecutor(Executor):
             machine_name, core_idx, home_directory = machine_info
             machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
             assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
+            mutant_origin_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-mutant_origin")
             
-            clean_script = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject, "clean_script.sh")
-            execute_bash_script(clean_script, os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject))
+            clean_script_dir = os.path.join(machine_core_dir, CONTEXT.SUBJECT.subject_configs["build_script_working_directory"])
+            clean_script = os.path.join(clean_script_dir, "clean_script.sh")
+            execute_bash_script(clean_script, clean_script_dir)
 
             needs_configuration = True
             while True:
@@ -354,11 +363,14 @@ class LocalExecutor(Executor):
                     if task is None:
                         break
                     
-                    target_file, mutant, testing_mutant, bug_idx, mutant_idx = task
-                    LOGGER.info(f"Worker {machine_name}::core{core_idx} processing mutant {mutant} for file {target_file}")
+                    origin_target_code_file, new_target_file, \
+                        origin_mutant_path, new_mutant_path, \
+                        origin_bug_idx, new_mutant_idx  = task
+                    LOGGER.info(f"Worker {machine_name}::core{core_idx} processing mutant {mutant} for file {new_target_file}")
 
                     # Copy mutant file to assigned works directory
-                    CONTEXT.FILE_MANAGER.copy_specific_file(testing_mutant, assigned_works_dir)
+                    CONTEXT.FILE_MANAGER.copy_specific_file(new_mutant_path, assigned_works_dir)
+                    CONTEXT.FILE_MANAGER.copy_specific_file(origin_mutant_path, mutant_origin_dir)
 
                     # TODO: Do not forget that target_file here is from cpp_mutation_info table
                     cmd = [
@@ -368,11 +380,12 @@ class LocalExecutor(Executor):
                         "--worker-type", "mutation_testing_result_tester",
                         "--machine", machine_name,
                         "--core-idx", str(core_idx),
-                        "--target-file", target_file,
-                        "--mutant", testing_mutant.name,
-                        "--base-bug", mutant.name,
-                        "--bug-id", str(bug_idx),
-                        "--mutant-id", str(mutant_idx)
+                        "--target-file", new_target_file,
+                        "--mutant", new_mutant_path.name,
+                        "--origin-mutant-target-file", origin_target_code_file,
+                        "--origin-mutant", origin_mutant_path.name,
+                        "--bug-id", str(origin_bug_idx),
+                        "--mutant-id", str(new_mutant_idx)
                     ]
                     if CONTEXT.CONFIG.ARGS.debug:
                         cmd.append("--debug")
@@ -400,7 +413,7 @@ class LocalExecutor(Executor):
         core_cnt = len(CONTEXT.CONFIG.MACHINE_CORE_LIST)
         task_queue = queue.Queue()
         for i, mutant in enumerate(mutant_list):
-            task_queue.put((mutant[0], mutant[1], mutant[2], mutant[3], mutant[4]))
+            task_queue.put((mutant[0], mutant[1], mutant[2], mutant[3], mutant[4], mutant[5]))
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=core_cnt) as executor:
             futures = [
