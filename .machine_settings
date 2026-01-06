@@ -1,6 +1,114 @@
 {
-    "gaster23.swtv": {
+    "faster7.swtv": {
         "cores": 8,
         "homedirectory": "/ssd_home/yangheechan/"
-    }   
+    },
+    "faster8.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster11.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster14.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster15.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster19.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster20.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster23.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster24.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster25.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster26.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster27.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster28.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster29.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster32.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster34.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster36.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster37.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster38.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster39.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster40.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster44.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster45.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster46.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster47.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster48.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster50.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    },
+    "faster51.swtv": {
+        "cores": 8,
+        "homedirectory": "/ssd_home/yangheechan/"
+    }
 }

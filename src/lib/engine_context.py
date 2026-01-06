@@ -14,6 +14,7 @@ class EngineContext:
     out_dir: str
     working_dir: str
     working_env_dir: str
+    src_repo: str
     dest_repo: str
     
     # Executables

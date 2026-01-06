@@ -99,13 +99,18 @@ class MutantBugTester(Worker):
             start_time = time.time()
             res = MUTANT.run_test_with_testScript(tc_script)
             end_time = time.time()
-            time_duration_ms = ((end_time - start_time) * 1000)
-            if res in crash_codes:
-                test_results["crashed"].append((tc_script, tc_script.name, res, time_duration_ms))
-            elif res == 0:
+            time_duration_ms = ((end_time - start_time) * 1000) # time in milliseconds
+            # if res in crash_codes:
+            #     test_results["fail"].append((tc_script, tc_script.name, res, time_duration_ms))
+            if res == 0:
                 test_results["pass"].append((tc_script, tc_script.name, res, time_duration_ms))
-            elif res == 1:
+            elif res == 126:
+                test_results["crashed"].append((tc_script, tc_script.name, res, time_duration_ms))
+            else:
                 test_results["fail"].append((tc_script, tc_script.name, res, time_duration_ms))
+            # deprecated for saving crash cases for crown
+            # elif res == 1:
+            #     test_results["fail"].append((tc_script, tc_script.name, res, time_duration_ms))
         return test_results
 
     def save_mutant(self, MUTANT: Mutant, test_results: dict = None):

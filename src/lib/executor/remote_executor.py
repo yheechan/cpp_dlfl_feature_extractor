@@ -42,7 +42,7 @@ class RemoteExecutor(Executor):
 
             # Copy subject repository to each machine core working env
             dest_repo_in_core = os.path.join(machine_core_dir, CONTEXT.CONFIG.ARGS.subject)
-            CONTEXT.FILE_MANAGER.copy_specific_directory(CONTEXT.dest_repo, dest_repo_in_core, machine=machine_name)
+            CONTEXT.FILE_MANAGER.copy_specific_directory(CONTEXT.src_repo, machine_core_dir, machine=machine_name)
             LOGGER.debug(f"Subject repository copied to: {dest_repo_in_core}")
 
     # Stage01: Mutant Bug Tester
@@ -71,14 +71,15 @@ class RemoteExecutor(Executor):
                         "ssh", machine_name,
                         "cd", src_dir,
                         "&&",
-                        "python3", "main.py", "--help"
-                        # "--experiment-label", CONTEXT.CONFIG.ARGS.experiment_label,
-                        # "--subject", CONTEXT.CONFIG.ARGS.subject,
-                        # "--worker-type", "mutant_bug_tester",
-                        # "--machine", machine_name,
-                        # "--core-idx", str(core_idx),
-                        # "--target-file", target_file,
-                        # "--mutant", mutant.name,
+                        "python3", "main.py",
+                        "--experiment-label", CONTEXT.CONFIG.ARGS.experiment_label,
+                        "--subject", CONTEXT.CONFIG.ARGS.subject,
+                        "--worker-type", "mutant_bug_tester",
+                        "--machine", machine_name,
+                        "--core-idx", str(core_idx),
+                        "--target-file", target_file,
+                        "--mutant", mutant.name,
+                        "--debug"
                     ]
                     if CONTEXT.CONFIG.ARGS.debug:
                         cmd.append("--debug")
@@ -123,7 +124,7 @@ class RemoteExecutor(Executor):
         # Clean up build artifacts in remote for each repository directory of each core of all machine
         for machine_name, core_idx, home_directory in CONTEXT.CONFIG.MACHINE_CORE_LIST:
             machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
-            clean_script_dir = os.path.join(machine_core_dir, CONTEXT.SUBJECT.name, CONTEXT.SUBJECT.subject_configs["build_script_working_directory"])
+            clean_script_dir = os.path.join(machine_core_dir, CONTEXT.SUBJECT.subject_configs["build_script_working_directory"])
             cmd = [
                 "ssh", machine_name,
                 "cd", clean_script_dir,
