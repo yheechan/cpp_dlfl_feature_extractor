@@ -49,7 +49,8 @@ class MutantBugGenerator(Engine):
 
         # Configure with no coverage option & build
         execute_bash_script(self.SUBJECT.configure_no_cov_script, self.SUBJECT.build_script_working_directory)
-        execute_bash_script(self.SUBJECT.build_script, self.SUBJECT.build_script_working_directory)
+        if not self.SUBJECT.name == "crown":
+            execute_bash_script(self.SUBJECT.build_script, self.SUBJECT.build_script_working_directory)
 
         # Generate mutants for each target file
         self._generate_mutants_for_target_files(target_file_info_list)
@@ -158,6 +159,8 @@ class MutantBugGenerator(Engine):
         mutant_list = []
         
         extension = "*.c" if self.SUBJECT.subject_configs["subject_language"] == "C" else "*.cpp"
+        if self.SUBJECT.name == "crown":
+            extension = "*.cc"
 
         for target_file, target_file_path, target_file_mutant_dir_path in target_file_info_list:
             LOGGER.debug(f"Collecting mutants from {target_file_mutant_dir_path}")

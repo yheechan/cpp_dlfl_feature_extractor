@@ -1,8 +1,11 @@
 import logging
 import os
+import concurrent.futures
+import queue
 
 from lib.executor.executor import Executor
 from lib.engine_context import EngineContext
+from utils.command_utils import *
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,7 +48,90 @@ class RemoteExecutor(Executor):
     # Stage01: Mutant Bug Tester
     def test_for_mutant_bugs(self, CONTEXT: EngineContext, mutant_list: list):
         """Test for mutant bugs on remote machines"""
-        raise NotImplementedError("RemoteExecutor does not implement test_for_mutant_bugs() method")
+        def _worker(task_queue, machine_info):
+            machine_name, core_idx, home_directory = machine_info
+            machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
+            assigned_works_dir = os.path.join(machine_core_dir, f"{CONTEXT.CONFIG.STAGE}-assigned_works")
+
+            needs_configuration = True
+            while True:
+                try:
+                    task = task_queue.get(timeout=1)
+                    if task is None:
+                        break
+                    
+                    target_file, mutant = task
+                    LOGGER.info(f"Worker {machine_name}::core{core_idx} processing mutant {mutant} for file {target_file}")
+
+                    # Copy mutant file to assigned works directory
+                    CONTEXT.FILE_MANAGER.copy_specific_file(mutant, assigned_works_dir, machine_name)
+
+                    src_dir = os.path.join(CONTEXT.CONFIG.ENV["SERVER_HOME"], "cpp_dlfl_feature_extractor/src/")
+                    cmd = [
+                        "ssh", machine_name,
+                        "cd", src_dir,
+                        "&&",
+                        "python3", "main.py", "--help"
+                        # "--experiment-label", CONTEXT.CONFIG.ARGS.experiment_label,
+                        # "--subject", CONTEXT.CONFIG.ARGS.subject,
+                        # "--worker-type", "mutant_bug_tester",
+                        # "--machine", machine_name,
+                        # "--core-idx", str(core_idx),
+                        # "--target-file", target_file,
+                        # "--mutant", mutant.name,
+                    ]
+                    if CONTEXT.CONFIG.ARGS.debug:
+                        cmd.append("--debug")
+                    if CONTEXT.CONFIG.ARGS.verbose:
+                        cmd.append("--verbose")
+                    if needs_configuration:
+                        cmd.append("--needs-configuration")
+                        needs_configuration = False
+                    
+
+                    # Execute the command
+                    execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+                    LOGGER.debug(f"Executing command on {machine_name}::core{core_idx}: {' '.join(cmd)}")
+                    try:
+                        LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
+                    except Exception as e:
+                        LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an error: {e}")
+                    finally:
+                        task_queue.task_done()
+                except queue.Empty:
+                    break
+                except Exception as e:
+                    LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an unexpected error: {e}")
+            
+        core_cnt = len(CONTEXT.CONFIG.MACHINE_CORE_LIST)
+        task_queue = queue.Queue()
+        for i, mutant in enumerate(mutant_list):
+            target_file, mutant, target_file_mutant_dir_path = mutant
+            task_queue.put((target_file, mutant))
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=core_cnt) as executor:
+            futures = [
+                executor.submit(_worker, task_queue, machine_info)
+                for machine_info in CONTEXT.CONFIG.MACHINE_CORE_LIST
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    LOGGER.error(f"Error occurred during mutant testing: {e}")
+
+        # Clean up build artifacts in remote for each repository directory of each core of all machine
+        for machine_name, core_idx, home_directory in CONTEXT.CONFIG.MACHINE_CORE_LIST:
+            machine_core_dir = os.path.join(CONTEXT.working_env_dir, f"{machine_name}/core{core_idx}")
+            clean_script_dir = os.path.join(machine_core_dir, CONTEXT.SUBJECT.name, CONTEXT.SUBJECT.subject_configs["build_script_working_directory"])
+            cmd = [
+                "ssh", machine_name,
+                "cd", clean_script_dir,
+                "&&",
+                "bash", "clean_script.sh"
+            ]
+            execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+            LOGGER.info(f"Cleaned up build artifacts on {machine_name}::core{core_idx}")
     
     # Stage02: Usable Bug Tester
     def test_for_usable_bugs(self, CONTEXT: EngineContext, mutant_list: list):

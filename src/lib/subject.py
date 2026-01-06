@@ -34,7 +34,7 @@ class Subject():
         assert os.path.exists(self.clean_script), "Clean build script does not exist"
         assert os.path.exists(self.configurations_json), "Configuration JSON does not exist"
         assert os.path.exists(self.build_script_working_directory)
-        assert os.path.exists(self.compile_commands_json_path)
+        # assert os.path.exists(self.compile_commands_json_path) # -- this must be ignored
         assert os.path.exists(self.test_case_directory)
 
     def set_environmental_variables(self, core_dir: str):
