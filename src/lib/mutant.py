@@ -113,26 +113,26 @@ class Mutant:
         tc_name = os.path.basename(tc_script)
 
         try:
-            res = sp.run(
+            proc = sp.Popen(
                 f"./{tc_name}",
                 shell=True, cwd=tc_dir,
                 stderr=sp.DEVNULL, stdout=sp.DEVNULL,
                 env=os.environ,
-                timeout=10,
                 preexec_fn=os.setsid  # Create new process group
             )
-        except sp.TimeoutExpired as e:
+            proc.wait(timeout=10)
+            returncode = proc.returncode
+        except sp.TimeoutExpired:
             LOGGER.info(f"Test case {tc_name} timed out")
             # Kill the entire process group to ensure child processes are terminated
-            if e.pid:
-                try:
-                    os.killpg(os.getpgid(e.pid), signal.SIGKILL)
-                except ProcessLookupError:
-                    pass  # Process already terminated
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except (ProcessLookupError, AttributeError):
+                pass  # Process already terminated
+            proc.wait()  # Clean up zombie process
             return 124  # using 124 as timeout code
         except sp.CalledProcessError as e:
-            LOGGER.error(f"Test case {tc_name} failed to execute: {e}")
-            LOGGER.error(f"Return code: {e.returncode}")
+            LOGGER.error(f"CalledProcessError running test case {tc_name}: {e}")
             LOGGER.error(f"Error output: {e.stderr.decode().strip()}")
             return e.returncode
         except Exception as e:
@@ -140,13 +140,13 @@ class Mutant:
             LOGGER.error(f"Error output: {str(e).strip()}")
             return 1  # using 1 as error code
 
-        if res.returncode == 0:
+        if returncode == 0:
             LOGGER.info(f"Test case {tc_name} passed")
-        elif res.returncode == 1:
+        elif returncode == 1:
             LOGGER.info(f"Test case {tc_name} failed")
         else:
-            LOGGER.info(f"Test case {tc_name} crashed with return code {res.returncode}")
-        return res.returncode
+            LOGGER.info(f"Test case {tc_name} crashed with return code {returncode}")
+        return returncode
 
     def set_bug_idx_from_db(self, DB: CRUD):
         bug_info = DB.read(

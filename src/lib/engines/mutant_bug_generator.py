@@ -298,7 +298,11 @@ class MutantBugGenerator(Engine):
                 }
             )
             bug_idx = bug_info[0][0] if len(bug_info) > 0 else None
-            assert bug_idx is not None, f"No bug info found in DB for mutant {mutant.name}"
+            try:
+                assert bug_idx is not None, f"No bug info found in DB for mutant {mutant.name}"
+            except AssertionError as e:
+                LOGGER.error(str(e))
+                continue
 
             conditions = {
                 "subject": self.CONFIG.ARGS.subject,
