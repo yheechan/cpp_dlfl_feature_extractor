@@ -10,6 +10,7 @@ from lib.worker_context import WorkerContext
 from utils.command_utils import *
 from utils.gdb_utils import *
 from utils.bitwise_utils import *
+from utils.bbcov_utils import *
 
 LOGGER = logging.getLogger(__name__)
 
@@ -276,6 +277,13 @@ class Mutant:
             "-name", "*.gcda", "-delete"
         ]
         sp.check_call(cmd, cwd=self.repo_dir, stderr=sp.PIPE, stdout=sp.PIPE)
+    
+    def remove_all_bbcd_files(self, testcases_execution_point: str):
+        cmd = [
+            "find", ".", "-type", "f",
+            "-name", "*.bbcd", "-delete"
+        ]
+        sp.check_call(cmd, cwd=testcases_execution_point, stderr=sp.PIPE, stdout=sp.PIPE)
 
     def set_filtered_files_for_gcovr(self, CONTEXT: WorkerContext):
         self.targeted_files = CONTEXT.SUBJECT.subject_configs["target_files"]
@@ -339,18 +347,40 @@ class Mutant:
         ])
         sp.check_call(cmd, cwd=cov_cwd, stderr=sp.PIPE, stdout=sp.PIPE)
         return raw_cov_file
+    
+    def generate_bbcd_line_output(target_files: list, bbcov_file: str) -> dict:
+        bbcov_line_cov = os.environ["BBCOV_LINE_COV"]
+        cmd = ["python3", bbcov_line_cov, bbcov_file]
+        try:
+            # read the line sequence in stdout
+            res = sp.run(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
+            if res.returncode != 0:
+                LOGGER.error(f"Error generating bbcov line output with command: {' '.join(cmd)}")
+                LOGGER.error(f"Error output: {res.stderr.decode().strip()}")
+                return {}
+            # it is not json format i will parse it
+            output_lines = res.stdout.decode().strip().split("\n")
+            line_cov_dict = parse_bbcov_line_cov_output(target_files, output_lines)
+        except Exception as e:
+            LOGGER.error(f"Exception occurred while generating bbcov line output with command: {' '.join(cmd)}")
+            return {}
+        return line_cov_dict
 
-    def check_buggy_line_covered(self, CONTEXT: WorkerContext, tc_script_name, raw_cov_file):
+    def check_buggy_line_covered(self, CONTEXT: WorkerContext, tc_script_name, cov_json: dict):
         """
         Return 0 if the buggy line is covered
         """
-        with open(raw_cov_file, 'r') as f:
-            cov_data = json.load(f)
         
         # This was include because in case of libxml2
         # gcovr makes target files as <target-file>.c
         # instead of libxml2/<target-file>.c 2024-12-18
-        model_file = cov_data["files"][0]["file"]
+        # cov_json is didct {"filename": {line_num: {"covered": int, "function": str}}}
+        model_file = ""
+        # use first file in cov_json
+        for filename in cov_json.keys():
+            model_file = filename
+            break
+
         if len(model_file.split("/")) == 1:
             target_file = self.target_file.split("/")[-1]
         elif not "zlib_ng" in self.subject \
@@ -363,34 +393,25 @@ class Mutant:
             target_file = self.target_file.split("src/")[1]
         elif "NSFW_cpp_" in self.subject:
             target_file = self.target_file.split("NSCore/")[1]
+        elif "crown" in self.subject:
+            target_file = self.target_file
         else:
             target_file = "/".join(self.target_file.split("/")[1:])
 
         file_exists = False
-        for file in cov_data["files"]:
-            if target_file in file["file"]:
-                file_exists = True
-                break
+        if target_file in cov_json:
+            file_exists = True
         
         if not file_exists:
             return -2
         
-        for file in cov_data["files"]:
-            # filename = file["file"].split("/")[-1]
-            # if filename == target_file:
-            filename = file["file"]
-            if target_file == filename:
-                lines = file["lines"]
-                for line in lines:
-                    if line["line_number"] == int(self.buggy_lineno):
-                        cur_lineno = line["line_number"]
-                        cur_count = line["count"]
-                        LOGGER.debug(f"{tc_script_name} on {filename} filename and line {cur_lineno} has count: {cur_count}")
-                        if line["count"] > 0:
-                            return 0
-                        else:
-                            return 1
-                return 1
+        cov_data = cov_json[target_file]
+        if int(self.buggy_lineno) not in cov_data:
+            return 1
+        line_cov_info = cov_data[int(self.buggy_lineno)]
+        LOGGER.debug(f"{tc_script_name} on {target_file} filename and line {self.buggy_lineno} has count: {line_cov_info['covered']}")
+        if line_cov_info["covered"] > 0:
+            return 0
         return 1
     
     def make_key(self, target_code_file, buggy_lineno, for_buggy_line_key=False):
