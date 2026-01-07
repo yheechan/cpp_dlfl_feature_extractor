@@ -104,7 +104,7 @@ class MutantBugTester(Worker):
             #     test_results["fail"].append((tc_script, tc_script.name, res, time_duration_ms))
             if res == 0:
                 test_results["pass"].append((tc_script, tc_script.name, res, time_duration_ms))
-            elif res == 126:
+            elif res in [126, 124]:  # build failure or timeout
                 test_results["crashed"].append((tc_script, tc_script.name, res, time_duration_ms))
             else:
                 test_results["fail"].append((tc_script, tc_script.name, res, time_duration_ms))

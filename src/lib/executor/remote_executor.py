@@ -79,7 +79,6 @@ class RemoteExecutor(Executor):
                         "--core-idx", str(core_idx),
                         "--target-file", target_file,
                         "--mutant", mutant.name,
-                        "--debug"
                     ]
                     if CONTEXT.CONFIG.ARGS.debug:
                         cmd.append("--debug")

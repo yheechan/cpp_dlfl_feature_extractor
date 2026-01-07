@@ -1,5 +1,6 @@
 import subprocess as sp
 import os
+import signal
 import logging
 import json
 
@@ -110,12 +111,35 @@ class Mutant:
     def run_test_with_testScript(self, tc_script: str):
         tc_dir = os.path.dirname(tc_script)
         tc_name = os.path.basename(tc_script)
-        res = sp.run(
-            f"./{tc_name}",
-            shell=True, cwd=tc_dir,
-            stderr=sp.DEVNULL, stdout=sp.DEVNULL,
-            env=os.environ
-        )
+
+        try:
+            res = sp.run(
+                f"./{tc_name}",
+                shell=True, cwd=tc_dir,
+                stderr=sp.DEVNULL, stdout=sp.DEVNULL,
+                env=os.environ,
+                timeout=10,
+                preexec_fn=os.setsid  # Create new process group
+            )
+        except sp.TimeoutExpired as e:
+            LOGGER.info(f"Test case {tc_name} timed out")
+            # Kill the entire process group to ensure child processes are terminated
+            if e.pid:
+                try:
+                    os.killpg(os.getpgid(e.pid), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass  # Process already terminated
+            return 124  # using 124 as timeout code
+        except sp.CalledProcessError as e:
+            LOGGER.error(f"Test case {tc_name} failed to execute: {e}")
+            LOGGER.error(f"Return code: {e.returncode}")
+            LOGGER.error(f"Error output: {e.stderr.decode().strip()}")
+            return e.returncode
+        except Exception as e:
+            LOGGER.error(f"Error running test case {tc_name}: {e}")
+            LOGGER.error(f"Error output: {str(e).strip()}")
+            return 1  # using 1 as error code
+
         if res.returncode == 0:
             LOGGER.info(f"Test case {tc_name} passed")
         elif res.returncode == 1:
