@@ -84,10 +84,11 @@ class LocalExecutor(Executor):
                         needs_configuration = False
                     
 
-                    # Execute the command
-                    execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
                     try:
-                        LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
+                        # Execute the command
+                        LOGGER.debug(f"Executing command on {machine_name}::core{core_idx}: {' '.join(cmd)}")
+                        execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+                        LOGGER.debug(f"{machine_name}::core{core_idx} executed command: {' '.join(cmd)} in {home_directory}")
                     except Exception as e:
                         LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an error: {e}")
                     finally:
@@ -164,10 +165,11 @@ class LocalExecutor(Executor):
                         needs_configuration = False
                     
 
-                    # Execute the command
-                    execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
                     try:
-                        LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
+                        # Execute the command
+                        LOGGER.debug(f"Executing command on {machine_name}::core{core_idx}: {' '.join(cmd)}")
+                        execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+                        LOGGER.debug(f"{machine_name}::core{core_idx} executed command: {' '.join(cmd)} in {home_directory}")
                     except Exception as e:
                         LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an error: {e}")
                     finally:
@@ -239,10 +241,11 @@ class LocalExecutor(Executor):
                         needs_configuration = False
                     
 
-                    # Execute the command
-                    execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
                     try:
-                        LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
+                        # Execute the command
+                        LOGGER.debug(f"Executing command on {machine_name}::core{core_idx}: {' '.join(cmd)}")
+                        execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+                        LOGGER.debug(f"{machine_name}::core{core_idx} executed command: {' '.join(cmd)} in {home_directory}")
                     except Exception as e:
                         LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an error: {e}")
                     finally:
@@ -313,10 +316,11 @@ class LocalExecutor(Executor):
                         needs_configuration = False
                     
 
-                    # Execute the command
-                    execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
                     try:
-                        LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
+                        # Execute the command
+                        LOGGER.debug(f"Executing command on {machine_name}::core{core_idx}: {' '.join(cmd)}")
+                        execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+                        LOGGER.debug(f"{machine_name}::core{core_idx} executed command: {' '.join(cmd)} in {home_directory}")
                     except Exception as e:
                         LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an error: {e}")
                     finally:
@@ -396,10 +400,11 @@ class LocalExecutor(Executor):
                         needs_configuration = False
                     
 
-                    # Execute the command
-                    execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
                     try:
-                        LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
+                        # Execute the command
+                        LOGGER.debug(f"Executing command on {machine_name}::core{core_idx}: {' '.join(cmd)}")
+                        execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+                        LOGGER.debug(f"{machine_name}::core{core_idx} executed command: {' '.join(cmd)} in {home_directory}")
                     except Exception as e:
                         LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an error: {e}")
                     finally:

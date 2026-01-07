@@ -64,7 +64,12 @@ class RemoteExecutor(Executor):
                     LOGGER.info(f"Worker {machine_name}::core{core_idx} processing mutant {mutant} for file {target_file}")
 
                     # Copy mutant file to assigned works directory
-                    CONTEXT.FILE_MANAGER.copy_specific_file(mutant, assigned_works_dir, machine_name)
+                    # lets make it to try once more at failure
+                    try:
+                        CONTEXT.FILE_MANAGER.copy_specific_file(mutant, assigned_works_dir, machine_name)
+                    except Exception as e:
+                        LOGGER.warning(f"Retrying copy of mutant {mutant} to {assigned_works_dir} on {machine_name} due to error: {e}")
+                        CONTEXT.FILE_MANAGER.copy_specific_file(mutant, assigned_works_dir, machine_name)
 
                     src_dir = os.path.join(CONTEXT.CONFIG.ENV["SERVER_HOME"], "cpp_dlfl_feature_extractor/src/")
                     cmd = [
@@ -90,10 +95,10 @@ class RemoteExecutor(Executor):
                     
 
                     # Execute the command
-                    execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
-                    LOGGER.debug(f"Executing command on {machine_name}::core{core_idx}: {' '.join(cmd)}")
                     try:
-                        LOGGER.debug(f"{machine_name}::core{core_idx} executing command: {' '.join(cmd)} in {home_directory}")
+                        LOGGER.debug(f"Executing command on {machine_name}::core{core_idx}: {' '.join(cmd)}")
+                        execute_command_as_list(cmd, working_dir=CONTEXT.CONFIG.ENV["CWD"])
+                        LOGGER.debug(f"{machine_name}::core{core_idx} executed command: {' '.join(cmd)} in {home_directory}")
                     except Exception as e:
                         LOGGER.error(f"Worker {machine_name}::core{core_idx} encountered an error: {e}")
                     finally:
