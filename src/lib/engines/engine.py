@@ -32,13 +32,14 @@ class Engine(ABC):
             # Set up all directories
             self._set_directories()
 
-            # Initialize local directories and executables first
-            self._initialize_basic_directory_on_local()
+            if self.CONFIG.ARGS.engine_type not in ["dataset_constructor", "editor"]:
+                # Initialize local directories and executables first
+                self._initialize_basic_directory_on_local()
 
             # Create context for executors with updated paths
             self.CONTEXT = self._create_context()
 
-            if not self.CONFIG.ARGS.engine_type == "dataset_constructor":
+            if self.CONFIG.ARGS.engine_type not in ["dataset_constructor", "editor"]:
                 # Initialize directories for machines
                 self._initialize_basic_directory_for_machines()
         else:
@@ -78,6 +79,7 @@ class Engine(ABC):
             out_dir=self.out_dir,
             working_dir=self.working_dir,
             working_env_dir=self.working_env_dir,
+            src_repo=self.src_repo,
             dest_repo=self.dest_repo,
             musicup_exec=self.musicup_exec,
             extractor_exec=self.extractor_exec
@@ -201,7 +203,7 @@ class Engine(ABC):
     def set_experiment_setup_configs(self):
         experiment_setup_config_path = os.path.join(
             self.config_dir,
-            "experiment_setup.rq0.json"
+            "experiment_setup.rq2.json"
         )
         if not os.path.exists(experiment_setup_config_path):
             LOGGER.error(f"Experiment setup config file not found at {experiment_setup_config_path}")

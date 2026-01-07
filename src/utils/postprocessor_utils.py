@@ -37,6 +37,15 @@ def normalize_data(pkl_file, ENV):
             line_data[sbfl_norm_key] = norm_val
         
 
+        target_line_list = ENV["target_lines"]
+        if 100 not in target_line_list or 10 not in ENV["mutation_cnt"]:
+            for formula in MBFL_FORMULA:
+                for transition_type, transition_key in TRANSITION_TYPES.items():
+                    mbfl_key = f"lineCnt100_mutCnt10_tcs{tcr}_{transition_key}_final_{formula}_score_rank"
+                    mbfl_norm_key = f"lineCnt100_mutCnt10_tcs{tcr}_{transition_key}_final_{formula}_score_norm"
+                    norm_val = 1 - (line_data[mbfl_key] / line_length)
+                    line_data[mbfl_norm_key] = norm_val
+
         # MBFL formula
         for formula in MBFL_FORMULA:
             for lnc in ENV["target_lines"]:

@@ -16,6 +16,7 @@ class ExperimentConfigs:
         "mutation_testing_result_tester": "stage05",
         "dataset_constructor": "stage06",
         "dataset_postprocessor": "stage07",
+        "editor": "stage08",
     }
     def __init__(self):
         self.ENV = None

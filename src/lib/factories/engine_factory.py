@@ -9,6 +9,7 @@ from lib.engines.usable_bug_selector import UsableBugSelector
 from lib.engines.prerequisite_data_extractor import PrerequisiteDataExtractor
 from lib.engines.mutant_mutant_generator import MutantMutantGenerator
 from lib.engines.mutation_testing_result_extractor import MutationTestingResultExtractor
+from lib.engines.editor import Editor
 
 from lib.engines.dataset_constructor import DatasetConstructor
 from lib.engines.dataset_postprocessor import DatasetPostprocessor
@@ -28,6 +29,7 @@ class EngineFactory:
         "mutation_testing_result_extractor": MutationTestingResultExtractor,
         "dataset_constructor": DatasetConstructor,
         "dataset_postprocessor": DatasetPostprocessor,
+        "editor": Editor,
     }
     
     @classmethod

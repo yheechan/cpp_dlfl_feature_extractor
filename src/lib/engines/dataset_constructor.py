@@ -24,7 +24,9 @@ class DatasetConstructor(Engine):
         self.set_experiment_setup_configs()
 
         # Get target mutants to construct dataset from
-        mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS TRUE")
+        mutant_list = self.get_target_mutants(
+            "AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS TRUE ORDER BY bug_idx LIMIT 50"
+        )
         LOGGER.debug(f"Total mutants to process: {len(mutant_list)}")
 
         self._write_suspicious_scores(mutant_list)

@@ -54,7 +54,7 @@ class DatasetPostprocessor(Engine):
 
             for line_cnt in self.CONFIG.ENV["target_lines"]:
                 for mut_cnt in self.CONFIG.ENV["mutation_cnt"]:
-                    method_dir = os.path.join(self.posprocessed_dataset_dir, f"repeat_{rid}/lineCnt{line_cnt}_mutCnt{mut_cnt}_tcs{self.CONFIG.ENV['tcs_reduction']}")
+                    method_dir = os.path.join(self.posprocessed_dataset_dir, f"repeat_{rid}/methods/lineCnt{line_cnt}_mutCnt{mut_cnt}_tcs{self.CONFIG.ENV['tcs_reduction']}")
                     self.FILE_MANAGER.make_directory(method_dir)
 
     def _process_dataset(self):
@@ -119,8 +119,8 @@ class DatasetPostprocessor(Engine):
                         pp_data["test_dataset"], full_fault_id, bid_data,
                         statement_data=statement_data, 
                         faulty_statement_data=faulty_statement_data,
-                        lnc=self.CONFIG.ENV["target_lines"][-1],  # Use the last line count for test dataset
-                        mtc=self.CONFIG.ENV["mutation_cnt"][-1],  # Use the last mutation count for test dataset
+                        lnc=100,  # Use the last line count for test dataset
+                        mtc=10,  # Use the last mutation count for test dataset
                         tcr="Reduced",  # Use "Reduced" for test dataset
                         set_statement_info=set_statement_info
                     )
