@@ -96,6 +96,9 @@ class MutantBugTester(Worker):
             "crashed": []
         }
         for tc_script in Path(self.testcases_dir).iterdir():
+            # only execute if file ends with *.sh
+            if not tc_script.name.endswith(".sh"):
+                continue
             start_time = time.time()
             res = MUTANT.run_test_with_testScript(tc_script)
             end_time = time.time()
