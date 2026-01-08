@@ -49,29 +49,26 @@ class PrerequisiteDataTester(Worker):
         # 1.1 set MUTANT basic info
         MUTANT.set_bug_idx_from_db(self.DB)
         MUTANT.set_tc_info_from_db(self.DB)
-        MUTANT.set_filtered_files_for_gcovr(self.CONTEXT)
-        MUTANT.set_target_preprocessed_files(self.CONTEXT)
 
-        # 2. Extract line2function mapping
-        res = MUTANT.extract_line2function_mapping(self.CONTEXT)
+        # 1. Apply patch
+        res = MUTANT.apply_patch(revert=False)
         if not res:
-            self.DB.update(
-                "cpp_bug_info",
-                set_values={
-                    "mutant_type": "line2function_extraction_failure",
-                    "prerequisites": False
-                },
-                conditions={"bug_idx": MUTANT.bug_idx}
-            )
-            LOGGER.error(f"Failed to extract line2function mapping for mutant {MUTANT.mutant_file}, skipping mutant")
+            LOGGER.error(f"Failed to apply patch {MUTANT.patch_file} to {MUTANT.target_file}, skipping mutant")
+            return
+        
+        # 2. Build the subject, if build fails, skip the mutant
+        res = execute_bash_script(self.CONTEXT.SUBJECT.build_script, self.CONTEXT.SUBJECT.build_script_working_directory)
+        if res != 0:
+            LOGGER.warning(f"Build failed after applying patch {MUTANT.patch_file}, skipping mutant")
+            MUTANT.apply_patch(revert=True)
             return
 
-        # 3. Set line2function info
-        MUTANT.set_line2function_info(self.CONTEXT)
-
         # 4. Measure coverage for candidate test cases
-        res = MUTANT.measure_coverage_for_candidate_test_cases(self.CONTEXT)
+        res = MUTANT.measure_coverage_for_candidate_test_cases(
+            self.CONTEXT, self.version_coverage_dir
+        )
         if not res:
+            MUTANT.apply_patch(revert=True)
             self.DB.update(
                 "cpp_bug_info",
                 set_values={
@@ -88,6 +85,7 @@ class PrerequisiteDataTester(Worker):
         MUTANT.set_tc_info_from_db(self.DB)  # refresh tc_info with using_tcs info
         if len(MUTANT.tc_info["pass"]) == 0:
             LOGGER.warning(f"Can't use this bug due to no usable passing test case for mutant {MUTANT.mutant_file}")
+            MUTANT.apply_patch(revert=True)
             self.DB.update(
                 "cpp_bug_info",
                 set_values={
@@ -126,6 +124,9 @@ class PrerequisiteDataTester(Worker):
 
         # 8. Update bug_idx prerequisites status in DB
         self.update_status_column_in_db(MUTANT.bug_idx, "prerequisites")
+
+        # 3. Apply revert patch
+        MUTANT.apply_patch(revert=True)
 
     def stop(self):
         """Stop the Prerequisite Data Testing process"""

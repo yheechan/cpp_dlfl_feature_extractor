@@ -1,5 +1,6 @@
 import os
-import shutil
+# import shutil
+# import json
 
 from lib.workers.worker import Worker
 from lib.experiment_configs import ExperimentConfigs
@@ -65,7 +66,8 @@ class UsableBugTester(Worker):
 
     
         # clear all bbcd files
-        MUTANT.remove_all_bbcd_files(self.CONTEXT.SUBJECT.subject_configs["testcase_execution_point"])
+        MUTANT.remove_all_bbcd_files(self.testcases_dir)
+        LOGGER.debug("Cleared all existing bbcd files before testing mutant")
 
         # 4. run the failing test to see coverage and if it executes the failing line
         for tc_idx, tc_name in MUTANT.tc_info["fail"]:
@@ -84,25 +86,34 @@ class UsableBugTester(Worker):
 
             # 4-4. Collect coverage
             # raw_cov_file = MUTANT.generate_coverage_json(self.CONTEXT, tc_name)
-            tc_name_without_sh = tc_name.strip().replace(".sh", "")
+            tc_name_without_sh = tc_name.strip().split(".")[0]
             bbcov_file = os.path.join(
-                self.CONTEXT.SUBJECT.subject_configs["testcase_execution_point"],
-                f"{tc_name_without_sh}.bbcov"
+                self.testcases_dir,
+                f"{tc_name_without_sh}.bbcd"
             )
             if not os.path.exists(bbcov_file):
                 LOGGER.error(f"Coverage file {bbcov_file} does not exist after running test case {tc_name}, skipping mutant")
                 MUTANT.apply_patch(revert=True)
                 return
 
-            # file, line_num, covered, func_name
+            # {filename: {line_num: {"covered": int, "function": str}}}
             cov_json = MUTANT.generate_bbcov_line_output(
                 self.CONTEXT.SUBJECT.subject_configs["target_files"],
                 bbcov_file
             )
-            if cov_json is None:
+            if len(cov_json) == 0:
                 LOGGER.error(f"Failed to generate line coverage from bbcov file {bbcov_file}, skipping mutant")
                 MUTANT.apply_patch(revert=True)
                 return
+            
+            # # save to version_coverage_dir
+            # cov_output_path = os.path.join(
+            #     self.version_coverage_dir,
+            #     f"{tc_name_without_sh}_coverage.json"
+            # )
+            # with open(cov_output_path, "w") as f:
+            #     json.dump(cov_json, f, indent=4)
+            # LOGGER.debug(f"Saved coverage json to {cov_output_path}")
 
             # 4-5 Check if the buggy line is coveraged
             buggy_line_covered = MUTANT.check_buggy_line_covered(
@@ -125,7 +136,7 @@ class UsableBugTester(Worker):
         MUTANT.apply_patch(revert=True)
 
         # 6. remove all bbcd files
-        MUTANT.remove_all_bbcd_files(self.CONTEXT.SUBJECT.subject_configs["testcase_execution_point"])
+        MUTANT.remove_all_bbcd_files(self.testcases_dir)
 
     def stop(self):
         """Stop the usable bug testing process"""

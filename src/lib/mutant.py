@@ -278,12 +278,12 @@ class Mutant:
         ]
         sp.check_call(cmd, cwd=self.repo_dir, stderr=sp.PIPE, stdout=sp.PIPE)
     
-    def remove_all_bbcd_files(self, testcases_execution_point: str):
+    def remove_all_bbcd_files(self, test_case_directory: str):
         cmd = [
             "find", ".", "-type", "f",
             "-name", "*.bbcd", "-delete"
         ]
-        sp.check_call(cmd, cwd=testcases_execution_point, stderr=sp.PIPE, stdout=sp.PIPE)
+        sp.check_call(cmd, cwd=test_case_directory, stderr=sp.PIPE, stdout=sp.PIPE)
 
     def set_filtered_files_for_gcovr(self, CONTEXT: WorkerContext):
         self.targeted_files = CONTEXT.SUBJECT.subject_configs["target_files"]
@@ -348,7 +348,7 @@ class Mutant:
         sp.check_call(cmd, cwd=cov_cwd, stderr=sp.PIPE, stdout=sp.PIPE)
         return raw_cov_file
     
-    def generate_bbcd_line_output(target_files: list, bbcov_file: str) -> dict:
+    def generate_bbcov_line_output(self, target_files: list, bbcov_file: str) -> dict:
         bbcov_line_cov = os.environ["BBCOV_LINE_COV"]
         cmd = ["python3", bbcov_line_cov, bbcov_file]
         try:
@@ -447,18 +447,22 @@ class Mutant:
         else:
             filename = target_code_file
 
-        function = None
-        for key, value in self.line2function_data.items():
-            if key.endswith(filename):
-                for func_info in value:
-                    if int(func_info[1]) <= int(buggy_lineno) <= int(func_info[2]):
-                        function = f"{filename}#{func_info[0]}#{buggy_lineno}"
-                        return function
-        function = f"{filename}#FUNCTIONNOTFOUND#{buggy_lineno}"
-        return function
+        if filename in self.line2function_data:
+            if int(buggy_lineno) in self.line2function_data[filename]:
+                function = self.line2function_data[filename][int(buggy_lineno)]["function"]
+                line_key = f"{filename}#{function}#{buggy_lineno}"
+                return line_key
+            else:
+                return f"{filename}#FUNCTIONNOTFOUND#{buggy_lineno}"
+        else:
+            return f"{filename}#FUNCTIONNOTFOUND#{buggy_lineno}"
 
     def set_target_preprocessed_files(self, CONTEXT: WorkerContext):
         self.target_preprocessed_files = CONTEXT.SUBJECT.subject_configs["target_preprocessed_files"]
+    
+    def set_line2function_from_bbcov(self, bbcov_line_cov: dict) -> bool:
+        self.line2function_data = bbcov_line_cov
+        return True
 
     def extract_line2function_mapping(self, CONTEXT: WorkerContext) -> bool:
         # 1. Apply patch
@@ -534,52 +538,70 @@ class Mutant:
             self.line2function_data = json.load(f)
         LOGGER.debug(f"Loaded line2function mapping from {line2function_file}")
     
-    def measure_coverage_for_candidate_test_cases(self, CONTEXT: WorkerContext):
-        # 1. Apply patch
-        res = self.apply_patch(revert=False)
-        if not res:
-            LOGGER.error(f"Failed to apply patch {self.patch_file} to {self.target_file}, skipping mutant")
-            return False
+    def measure_coverage_for_candidate_test_cases(self, CONTEXT: WorkerContext, version_coverage_dir: str) -> bool:
         
-        # 2. Build the subject, if build fails, skip the mutant
-        res = execute_bash_script(CONTEXT.SUBJECT.build_script, CONTEXT.SUBJECT.build_script_working_directory)
-        if res != 0:
-            LOGGER.warning(f"Build failed after applying patch {self.patch_file}, skipping mutant")
-            self.apply_patch(revert=True)
-            return False
+        save_line2function = True
         
         for test_type in ["fail", "pass", "cctc"]:
             for tc_idx, tc_name in self.tc_info[test_type]:
-                # 2.1 remove all gcda files
-                self.remove_all_gcda()
+                # # 2.1 remove all gcda files
+                # self.remove_all_gcda()
 
                 # 2.2 run the test case
                 res = self.run_test_with_testScript(os.path.join(CONTEXT.testcases_dir, tc_name))
                 
-                # 2.3 remove untargeted files for gcovr
-                self.remove_untargeted_files_for_gcovr(CONTEXT)
+                # # 2.3 remove untargeted files for gcovr
+                # self.remove_untargeted_files_for_gcovr(CONTEXT)
 
-                # 2-4. Collect coverage
-                raw_cov_file = self.generate_coverage_json(CONTEXT, tc_name)
+                # # 2-4. Collect coverage
+                # raw_cov_file = self.generate_coverage_json(CONTEXT, tc_name)
+                tc_name_without_sh = tc_name.strip().split(".")[0]
+                bbcov_file = os.path.join(
+                    CONTEXT.testcases_dir,
+                    f"{tc_name_without_sh}.bbcd"
+                )
+                if not os.path.exists(bbcov_file):
+                    LOGGER.error(f"BBCOV file {bbcov_file} does not exist for test case {tc_name}, skipping coverage measurement")
+                    return False
+                
+                # {filename: {line_num: {"covered": int, "function": str}}}
+                cov_json = self.generate_bbcov_line_output(
+                    CONTEXT.SUBJECT.subject_configs["target_files"],
+                    bbcov_file
+                )
+                if len(cov_json) == 0:
+                    LOGGER.error(f"Failed to generate coverage json from bbcov file {bbcov_file} for test case {tc_name}, skipping coverage measurement")
+                    return False
+                
+                if save_line2function:
+                    self.set_line2function_from_bbcov(cov_json)
+                    save_line2function = False
+
+                # save to version_coverage_dir
+                cov_output_path = os.path.join(
+                    version_coverage_dir,
+                    f"{tc_name_without_sh}_coverage.json"
+                )
+                with open(cov_output_path, "w") as f:
+                    json.dump(cov_json, f, indent=4)
+                LOGGER.debug(f"Saved coverage json to {cov_output_path}")
 
                 # 2-5 Identify cctcs from pjassings tests
                 if test_type == "pass":
-                    buggy_line_covered = self.check_buggy_line_covered(CONTEXT, tc_name, raw_cov_file)
+                    buggy_line_covered = self.check_buggy_line_covered(
+                        CONTEXT, tc_name, cov_json)
                     if buggy_line_covered == 0:
                         self.tc_info["cctc"].append((tc_idx, tc_name))
                         LOGGER.debug(f"Candidate correct test case (cctc) found: {tc_name} covers buggy line {self.buggy_lineno}")
                 elif test_type == "fail":
-                    buggy_line_covered = self.check_buggy_line_covered(CONTEXT, tc_name, raw_cov_file)
+                    buggy_line_covered = self.check_buggy_line_covered(
+                        CONTEXT, tc_name, cov_json)
                     if buggy_line_covered != 0:
                         LOGGER.error(f"Failing test case {tc_name} does not cover buggy line {self.buggy_lineno}")
-                        self.apply_patch(revert=True)
-                        raise ValueError(f"Failing test case {tc_name} does not cover buggy line {self.buggy_lineno}")
+                        return False
 
         if CONTEXT.SUBJECT.subject_configs["test_initialization"]["status"] == True:
             self._save_initialization_tc_cov(CONTEXT)     
-            
-        # 3. Apply revert patch
-        self.apply_patch(revert=True)
 
         return True
     
@@ -652,25 +674,61 @@ class Mutant:
         self.lineKey2lineIdx = lineKey2lineIdx
         self.lineIdx2lineKey = lineIdx2lineKey
         LOGGER.debug(f"Created lineKey2lineIdx mapping with {len(all_line_keys)} unique lines")
+    
+    def get_lineKey2lineIdx_from_all_bbcd_json_coverage_files(self, CONTEXT: WorkerContext):
+        all_line_keys = set()
+        
+        # Collect all unique line keys from all test case coverage files
+        for test_type in ["fail", "pass", "cctc"]:
+            for tc_idx, tc_name in self.tc_info[test_type]:
+                tc_name_without_sh = tc_name.strip().split(".")[0]
+                cov_file = os.path.join(
+                    CONTEXT.coverage_dir,
+                    self.mutant_name,
+                    f"{tc_name_without_sh}_coverage.json"
+                )
+                if os.path.exists(cov_file):
+                    with open(cov_file, 'r') as f:
+                        cov_data = json.load(f)
+                    
+                    for filename in cov_data:
+                        for line_number_str, lineData in cov_data[filename].items():
+                            line_number = int(line_number_str)
+                            key = self.make_key(filename, line_number)
+                            all_line_keys.add(key)
+        
+        # Create the mappings
+        lineKey2lineIdx = {}
+        lineIdx2lineKey = {}
+        for idx, key in enumerate(sorted(all_line_keys)):
+            lineKey2lineIdx[key] = idx
+            lineIdx2lineKey[idx] = key
+            
+        self.lineKey2lineIdx = lineKey2lineIdx
+        self.lineIdx2lineKey = lineIdx2lineKey
+        LOGGER.debug(f"Created lineKey2lineIdx mapping with {len(all_line_keys)} unique lines from bbcd coverage files")
 
     def get_lineCovBitVal_from_tc_list(self, CONTEXT: WorkerContext, tc_list: list):
         tcsIdx2lineCovBitVal = {}
         for tc_idx, tc_name in tc_list:
             lineCovBitSeq = ['0'] * len(self.lineKey2lineIdx)
-            raw_cov_file = os.path.join(CONTEXT.coverage_dir, self.mutant_name, f"{tc_name.split('.')[0]}.raw.json")
-            with open(raw_cov_file, 'r') as f:
+            tc_name_without_sh = tc_name.strip().split(".")[0]
+            cov_file = os.path.join(
+                CONTEXT.coverage_dir,
+                self.mutant_name,
+                f"{tc_name_without_sh}_coverage.json"
+            )
+            with open(cov_file, 'r') as f:
                 cov_data = json.load(f)
-            
-            for file in cov_data["files"]:
-                filename = file["file"]
-                for lineIdx, lineData in enumerate(file["lines"]):
-                    line_number = lineData["line_number"]
-                    count = lineData["count"]
+            for filename in cov_data:
+                for line_number_str, lineData in cov_data[filename].items():
+                    line_number = int(line_number_str)
+                    count = lineData["covered"]
                     key = self.make_key(filename, line_number)
-                    idx = self.lineKey2lineIdx[key]
-
-                    if int(count) > 0:
-                        lineCovBitSeq[idx] = '1'
+                    if key in self.lineKey2lineIdx:
+                        idx = self.lineKey2lineIdx[key]
+                        if int(count) > 0:
+                            lineCovBitSeq[idx] = '1'
             tcsIdx2lineCovBitVal[tc_idx] = int("".join(lineCovBitSeq), 2)
         return tcsIdx2lineCovBitVal
     
@@ -774,11 +832,9 @@ class Mutant:
         )
         LOGGER.debug(f"buggy_line_key: {self.buggy_line_key}")
 
-        # 2. set lineKey2lineIdx using all test case coverage files
-        first_raw_cov_file = os.path.join(CONTEXT.coverage_dir, self.mutant_name, f"{self.tc_info['fail'][0][1].split('.')[0]}.raw.json")
-        LOGGER.debug(f"Creating lineKey2lineIdx from: {first_raw_cov_file}")
-        
-        self.get_lineKey2lineIdx_from_all_coverage_files(CONTEXT)
+        # # 2. set lineKey2lineIdx using all test case coverage files
+        # self.get_lineKey2lineIdx_from_all_coverage_files(CONTEXT)
+        self.get_lineKey2lineIdx_from_all_bbcd_json_coverage_files(CONTEXT)
         LOGGER.debug(f"Total lines in lineKey2lineIdx: {len(self.lineKey2lineIdx)}")
 
         # 3. Get coverage info for each test case list
@@ -788,19 +844,23 @@ class Mutant:
         failLinesBitVal = merge_lineCovBitVal(failTcs2lineCovBitVal)
         failLinesBitValStr = format(failLinesBitVal, f'0{len(self.lineKey2lineIdx)}b')
         numLinesExecutedByFailingTCs = failLinesBitValStr.count("1")
+        LOGGER.debug(f"Number of lines executed by failing TCs: {numLinesExecutedByFailingTCs}")
 
         passTcs2lineCovBitVal = self.get_lineCovBitVal_from_tc_list(CONTEXT, self.tc_info["pass"])
         passLinesBitVal = merge_lineCovBitVal(passTcs2lineCovBitVal)
         passLinesBitValStr = format(passLinesBitVal, f'0{len(self.lineKey2lineIdx)}b')
         numLinesExecutedByPassingTCs = passLinesBitValStr.count("1")
+        LOGGER.debug(f"Number of lines executed by passing TCs: {numLinesExecutedByPassingTCs}")
 
         cctcTcs2lineCovBitVal = self.get_lineCovBitVal_from_tc_list(CONTEXT, self.tc_info["cctc"])
         cctcLinesBitVal = merge_lineCovBitVal(cctcTcs2lineCovBitVal)
         cctcLinesBitValStr = format(cctcLinesBitVal, f'0{len(self.lineKey2lineIdx)}b')
         numLinesExecutedByCCTCs = cctcLinesBitValStr.count("1")
+        LOGGER.debug(f"Number of lines executed by cctc TCs: {numLinesExecutedByCCTCs}")
 
         totalNumLinesExecutedStr = format((failLinesBitVal | passLinesBitVal | cctcLinesBitVal), f'0{len(self.lineKey2lineIdx)}b')
         numTotalLinesExecuted = totalNumLinesExecutedStr.count("1")
+        LOGGER.debug(f"Number of total lines executed by all TCs: {numTotalLinesExecuted}")
 
         # 4. Get candidate lines which are lines executed by failing test cases
         candidate_lineKeys2newlineIdx = {}
@@ -897,6 +957,8 @@ class Mutant:
         # TODO:
         # PROBABLITY WILL NEED TO MODIFY FOR THIS FOR DIFFERENT SUBJECT
         # BECAUSE DIFFERENT SUBJECTS HAVE DIFFERENT TEST SCRIPT FORMATS
+        if "crown" in self.subject:
+            return extract_execution_cmd_from_crown_test_script_file(tc_script)
         return extract_execution_cmd_from_test_script_file(tc_script)
 
     def extract_stack_trace_for_failing_tests(self, CONTEXT: WorkerContext, DB: CRUD):
@@ -904,28 +966,42 @@ class Mutant:
         test_execution_point = os.path.join(self.core_dir, CONTEXT.SUBJECT.subject_configs["testcase_execution_point"])
         source_code_filename = self.target_code_file.split("/")[-1]
         line_number = self.buggy_lineno
+
         for tc_idx, tc_name in self.tc_info["fail"]:
             tc_script_path = os.path.join(CONTEXT.testcases_dir, tc_name)
+            tc_name_without_sh = tc_name.strip().split(".")[0]
+
+            if "crown" in self.subject:
+                tc_execution_point = os.path.join(
+                    test_execution_point,
+                    tc_name_without_sh
+                )
+            else:
+                tc_execution_point = test_execution_point
 
             # 1. make execution command
             execution_cmd = self.extract_execution_command(tc_script_path)
             
             # 2. make gdb script
             if "NSFW_cpp_" in self.subject:
-                gdb_script_txt = make_gdb_script_txt_cpp(test_execution_point, source_code_filename, line_number)
+                gdb_script_txt = make_gdb_script_txt_cpp(tc_execution_point, source_code_filename, line_number)
             else:
-                gdb_script_txt = make_gdb_script_txt(test_execution_point, source_code_filename, line_number)
+                gdb_script_txt = make_gdb_script_txt(tc_execution_point, source_code_filename, line_number)
 
             # 3. run gdb
-            gdb_cmd = f"gdb -x gdb_script.txt -batch --args {execution_cmd}"
-            gdb_result = sp.run(
-                    gdb_cmd,
-                    shell=True,
-                    stderr=sp.PIPE,
-                    stdout=sp.PIPE,
-                    encoding="utf-8",
-                    cwd=test_execution_point
-                )
+            try:
+                gdb_cmd = f"gdb -x gdb_script.txt -batch --args {execution_cmd}"
+                gdb_result = sp.run(
+                        gdb_cmd,
+                        shell=True,
+                        stderr=sp.PIPE,
+                        stdout=sp.PIPE,
+                        encoding="utf-8",
+                        cwd=tc_execution_point
+                    )
+            except Exception as e:
+                LOGGER.error(f"Exception occurred while running gdb for test case {tc_name}: {e}")
+                continue
             
             bt_list = parse_gdb_output_for_stack_trace(gdb_result.stdout.split("\n"))
             stack_trace = "".join(bt_list)

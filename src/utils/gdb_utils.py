@@ -34,6 +34,16 @@ def extract_execution_cmd_from_test_script_file(tc_script: str) -> str:
     # Get the string starting from the first '.' character
     return lines[1].strip()[lines[1].strip().index('./'):]
 
+def extract_execution_cmd_from_crown_test_script_file(tc_script: str) -> str:
+    """ example of tc_script contents:
+    cd TC1
+    timeout 5s ../../tc_generator/bin/run_crown.bbcov "./program1.i.func_14.driver" 10 -rev-dfs 5 -TCDIR program1_func_14_output ../TC1.bbcd
+    """
+    with open(tc_script, 'r') as f:
+        lines = f.readlines()
+    
+    return lines[1].strip()[lines[1].strip().index('../'):] 
+
 
 
 def parse_gdb_output_for_stack_trace(stdout_list: list) -> list:
