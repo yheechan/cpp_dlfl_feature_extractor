@@ -12,7 +12,6 @@ class MutationTestingResultExtractor(Engine):
     def __init__(self, CONFIG: ExperimentConfigs):
         super().__init__(CONFIG)
         LOGGER.info("MutationTestingResultExtractor initialized")
-
         self.mutant_mutants_dir = os.path.join(self.out_dir, "mutant_mutants")
 
     def run(self):
@@ -31,7 +30,7 @@ class MutationTestingResultExtractor(Engine):
             mutant_list.extend(new_mutant_list)
             LOGGER.debug(f"EXTENDED mutant list length is {len(mutant_list)}")
         else:
-            mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL LIMIT 50")
+            mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL")
         LOGGER.debug(f"Total mutants to process: {len(mutant_list)}")
 
         mutant_mutants_list = self._get_mutant_mutants_from_db(mutant_list)
@@ -46,7 +45,7 @@ class MutationTestingResultExtractor(Engine):
 
         self._start_extracting_mutation_testing_results(mutant_mutants_list)
 
-        # # # zip subject_mutant_mutants_dir
+        # zip subject_mutant_mutants_dir
         self.FILE_MANAGER.zip_directory(self.mutant_mutants_dir, self.mutant_mutants_dir)
 
 
@@ -61,6 +60,7 @@ class MutationTestingResultExtractor(Engine):
                 special=" AND build_result IS NULL"
             )
             for new_target_code_file, new_mutant_filename, new_mutant_idx in res:
+                new_target_file = new_target_code_file
                 # TODO: I have change this because for zlib we save without subject prefix in mutation_info table
                 # --target-file NSFW_c_frw/NSFW/src/frw/ns_event.c --mutant ns_event.MUT377.c
                 if "zlib_ng" in self.CONFIG.ARGS.subject:

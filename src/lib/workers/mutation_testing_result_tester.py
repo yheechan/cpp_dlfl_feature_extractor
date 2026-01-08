@@ -46,6 +46,7 @@ class MutationTestingResultTester(Worker):
         # 2. Apply patch to taget_file
         res = MUTANT.apply_patch(revert=False)
         if not res:
+            MUTANT.apply_patch_og(revert=True)
             LOGGER.error(f"Failed to apply patch {MUTANT.patch_file} to {MUTANT.target_file}, skipping mutant")
             return
         
