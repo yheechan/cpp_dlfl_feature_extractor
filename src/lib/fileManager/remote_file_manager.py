@@ -34,6 +34,14 @@ class RemoteFileManager(FileManager):
         execute_command_as_list(cmd)
         LOGGER.debug(f"Remote directory copied from {src} to {dest}")
     
+    def copy_specific_directory_from_remote(self, src: str, dest: str, machine: str = None):
+        cmd = [
+            "rsync", "-t", "-r", 
+            f"{machine}:{src}", f"{dest}"
+        ]
+        execute_command_as_list(cmd)
+        LOGGER.debug(f"Remote directory copied from {src} on {machine} to {dest}")
+    
     def copy_specific_file(self, src: str, dest: str, machine: str = None):
         cmd = [
             "rsync", "-t", 

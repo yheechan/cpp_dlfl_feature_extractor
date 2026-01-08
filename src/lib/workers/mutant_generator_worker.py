@@ -78,12 +78,13 @@ class MutantGeneratorWorker(Worker):
         # 5. Generate mutant mutants
         target_file_mutant_dirs = [dir for dir in os.listdir(self.version_mutant_mutants_dir)]
         if len(target_file_mutant_dirs) == 0:
-            LOGGER.debug("No target file mutant directories found, skipping mutant generation")
+            LOGGER.debug("No target file mutant directories found, continue mutant generation")
             # 9. make required directories that will hold the mutant mutants
             self._make_required_directories_for_mutant_mutants(MUTANT)
 
             self._generate_mutants_for_target_files_only_only_selected_lines(targetFile2fileInfo)
         else:
+            LOGGER.debug("No target file mutant directories found, skipping mutant generation")
             LOGGER.debug(f"Found target file mutant directories: {target_file_mutant_dirs}")
 
         # 6. Get generated mutants
@@ -130,8 +131,13 @@ class MutantGeneratorWorker(Worker):
             if "NSFW_cpp_" in MUTANT.subject:
                 target_file = f"NSCore/"+target_file
             line_num = lineInfo["lineno"]
-            # TODO: HERE WE HAVE STARTED FROM SUBJECT_REPO BECAUSE ZLIB_NG's LINE_INFO CONTAINS FROM REPO ROOT
-            target_file_path = os.path.join(self.subject_repo, target_file)
+
+            if "crown" in MUTANT.subject:
+                target_file_path = os.path.join(self.core_dir, target_file)
+            else:
+                # TODO: HERE WE HAVE STARTED FROM SUBJECT_REPO BECAUSE ZLIB_NG's LINE_INFO CONTAINS FROM REPO ROOT
+                target_file_path = os.path.join(self.subject_repo, target_file)
+
             if target_file not in targetFiles2fileInfo:
                 targetFiles2fileInfo[target_file] = {"line_nums": [], "target_file_path": target_file_path}
             targetFiles2fileInfo[target_file]["line_nums"].append(str(line_num))
@@ -167,6 +173,8 @@ class MutantGeneratorWorker(Worker):
         mutant_list = []
 
         extension = "*.c" if self.SUBJECT.subject_configs["subject_language"] == "C" else "*.cpp"
+        if self.SUBJECT.name == "crown":
+            extension = "*.cc"
 
         for target_file, targetFileInfo in targetFile2fileInfo.items():
             target_file_mutant_dir_name = target_file.replace("/", "#")

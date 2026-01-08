@@ -19,6 +19,7 @@ class MutantMutantGenerator(Engine):
 
         # Initialize required tables, columns in DB
         self._initialize_required_tables()
+        self._initialize_required_directories()
 
         # Get target mutants to generate mutants from
         mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS NULL and mutants_generated IS NULL")
@@ -73,6 +74,12 @@ class MutantMutantGenerator(Engine):
                 )
         
         _init_cpp_mutant_mutant_info_table()
+
+    def _initialize_required_directories(self):
+        """Initialize required directories for mutant mutant generation"""
+        self.mutant_mutants_dir = os.path.join(self.out_dir, "mutant_mutants")
+        self.FILE_MANAGER.make_directory(self.mutant_mutants_dir)
+        LOGGER.debug(f"MutantMutant directory created at: {self.mutant_mutants_dir}")
     
     def _start_generating_mutants(self, mutant_list: list):
         self.EXECUTOR.generate_mutants_from_mutants(self.CONTEXT, mutant_list)
