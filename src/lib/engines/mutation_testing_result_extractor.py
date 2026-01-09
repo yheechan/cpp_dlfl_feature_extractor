@@ -20,28 +20,33 @@ class MutationTestingResultExtractor(Engine):
 
         # Get target mutants to generate mutants from
         if "NSFW_c_msg" in self.CONFIG.ARGS.subject or "NSFW_cpp_thread" in self.CONFIG.ARGS.subject:
-            mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL")
+            mutant_list = self.get_target_mutants(
+                "AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL",
+                distinct_by_buggy_location=True
+            )
         elif "NSFW_c_frw" in self.CONFIG.ARGS.subject:
-            mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS TRUE")
+            mutant_list = self.get_target_mutants(
+                "AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS TRUE",
+                distinct_by_buggy_location=True
+            )
             LOGGER.debug(f"mbfl is true mutants {len(mutant_list)}")
             curr_cnt = len(mutant_list)
             limit_cnt = 50 - curr_cnt
-            new_mutant_list = self.get_target_mutants(f"AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL LIMIT {limit_cnt}")
+            new_mutant_list = self.get_target_mutants(
+                f"AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL LIMIT {limit_cnt}",
+                distinct_by_buggy_location=True
+            )
             mutant_list.extend(new_mutant_list)
             LOGGER.debug(f"EXTENDED mutant list length is {len(mutant_list)}")
         else:
-            mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL")
+            mutant_list = self.get_target_mutants(
+                "AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL LIMIT 10",
+                distinct_by_buggy_location=True
+            )
         LOGGER.debug(f"Total mutants to process: {len(mutant_list)}")
 
         mutant_mutants_list = self._get_mutant_mutants_from_db(mutant_list)
         LOGGER.debug(f"Testing on {len(mutant_mutants_list)} mutants")
-        
-        # # TODO:TEMPORARILY REDUCE SET FOR TEST
-        # # only leave mutant where src_bug_idx == 153
-        # mutant_mutants_list = [item for item in mutant_mutants_list if item[4] in [14195]]
-        # LOGGER.debug(f"Filtered mutant mutants to process: {len(mutant_mutants_list)}")
-        # mutant_mutants_list = mutant_mutants_list[:1]
-        # LOGGER.debug(f"Only testing one mutant {mutant_mutants_list}")
 
         self._start_extracting_mutation_testing_results(mutant_mutants_list)
 

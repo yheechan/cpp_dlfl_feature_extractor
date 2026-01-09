@@ -22,7 +22,10 @@ class MutantMutantGenerator(Engine):
         self._initialize_required_directories()
 
         # Get target mutants to generate mutants from
-        mutant_list = self.get_target_mutants("AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS NULL and mutants_generated IS NULL")
+        mutant_list = self.get_target_mutants(
+            "AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS NULL and mutants_generated IS NULL",
+            distinct_by_buggy_location=True
+        )
 
         # Randomly select the number of CONFIG.ENV["NUMBER_BUGS_TO_TEST_FOR_MUTATION_TESTING_RESULTS"]
         if len(mutant_list) > int(self.CONFIG.ENV["NUMBER_BUGS_TO_TEST_FOR_MUTATION_TESTING_RESULTS"]):

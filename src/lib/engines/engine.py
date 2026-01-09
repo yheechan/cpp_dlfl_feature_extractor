@@ -177,18 +177,36 @@ class Engine(ABC):
         """Optional cleanup method that subclasses can override"""
         pass
 
-    def get_target_mutants(self, special: str = None) -> list:
-        """Get the list of target mutants to process"""
+    def get_target_mutants(self, special: str = None, distinct_by_buggy_location: bool = False) -> list:
+        """Get the list of target mutants to process
+        
+        Args:
+            special: Additional SQL conditions
+            distinct_by_buggy_location: If True, select only one mutant per distinct (buggy_file, buggy_function, buggy_lineno)
+        """
         self.generated_mutants_dir = os.path.join(self.out_dir, "generated_mutants")
-        res = self.DB.read(
-            "cpp_bug_info",
-            columns="version, type, target_code_file, buggy_code_file, bug_idx",
-            conditions={
-                "subject": self.CONFIG.ARGS.subject,
-                "experiment_label": self.CONFIG.ARGS.experiment_label,
-            },
-            special=special
-        )
+        
+        if distinct_by_buggy_location:
+            # Use DISTINCT ON to get one mutant per buggy location
+            res = self.DB.read(
+                "cpp_bug_info",
+                columns="DISTINCT ON (buggy_file, buggy_function, buggy_lineno) version, type, target_code_file, buggy_code_file, bug_idx",
+                conditions={
+                    "subject": self.CONFIG.ARGS.subject,
+                    "experiment_label": self.CONFIG.ARGS.experiment_label,
+                },
+                special=special
+            )
+        else:
+            res = self.DB.read(
+                "cpp_bug_info",
+                columns="version, type, target_code_file, buggy_code_file, bug_idx",
+                conditions={
+                    "subject": self.CONFIG.ARGS.subject,
+                    "experiment_label": self.CONFIG.ARGS.experiment_label,
+                },
+                special=special
+            )
         
         mutant_list = []
         for version, mutant_type, target_code_file, buggy_code_file, bug_idx in res:

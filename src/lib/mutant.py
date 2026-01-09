@@ -991,19 +991,31 @@ class Mutant:
             # 3. run gdb
             try:
                 gdb_cmd = f"gdb -x gdb_script.txt -batch --args {execution_cmd}"
-                gdb_result = sp.run(
-                        gdb_cmd,
-                        shell=True,
-                        stderr=sp.PIPE,
-                        stdout=sp.PIPE,
-                        encoding="utf-8",
-                        cwd=tc_execution_point
-                    )
+                proc = sp.Popen(
+                    gdb_cmd,
+                    shell=True,
+                    cwd=tc_execution_point,
+                    stderr=sp.PIPE,
+                    stdout=sp.PIPE,
+                    encoding="utf-8",
+                    env=os.environ,
+                    preexec_fn=os.setsid  # Create new process group
+                )
+                proc.wait(timeout=20)
+                stdout_output = proc.stdout.read()
+                returncode = proc.returncode
+            except sp.TimeoutExpired:
+                LOGGER.error(f"GDB timed out while running for test case {tc_name}")
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except:
+                    pass
+                continue
             except Exception as e:
                 LOGGER.error(f"Exception occurred while running gdb for test case {tc_name}: {e}")
                 continue
             
-            bt_list = parse_gdb_output_for_stack_trace(gdb_result.stdout.split("\n"))
+            bt_list = parse_gdb_output_for_stack_trace(stdout_output.split("\n"))
             stack_trace = "".join(bt_list)
 
             # 4. save stack trace to DB

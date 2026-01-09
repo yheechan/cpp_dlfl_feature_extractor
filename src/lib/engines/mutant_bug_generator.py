@@ -126,6 +126,8 @@ class MutantBugGenerator(Engine):
                 max_per_line = 40
             elif  self.SUBJECT.name == "NSFW_c_msg":
                 max_per_line = 40
+            elif self.SUBJECT.name == "crown":
+                max_per_line = 10
             LOGGER.debug(f"{self.SUBJECT.name} makes {max_per_line} max mutants per line")
             
             cmd = [
