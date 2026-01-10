@@ -40,7 +40,7 @@ class MutationTestingResultExtractor(Engine):
             LOGGER.debug(f"EXTENDED mutant list length is {len(mutant_list)}")
         else:
             mutant_list = self.get_target_mutants(
-                "AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL LIMIT 10",
+                "AND initial IS TRUE AND usable IS TRUE and prerequisites IS TRUE and selected_for_mbfl IS TRUE and mutants_generated IS TRUE and mbfl IS NULL",
                 distinct_by_buggy_location=True
             )
         LOGGER.debug(f"Total mutants to process: {len(mutant_list)}")
